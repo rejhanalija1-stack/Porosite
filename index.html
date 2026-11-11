@@ -4,183 +4,478 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#12343b">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Rruga e Porosive</title>
+<title>Dërgesat e ditës</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#14171a;--mu:#6b7280;--ac:#0f766e;--bd:#e3e6ea;--dg:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101214;--card:#1b1e22;--tx:#eceff2;--mu:#9aa3ad;--ac:#2dd4bf;--bd:#2c3137;--dg:#f87171}}
-:root[data-theme="dark"]{--bg:#101214;--card:#1b1e22;--tx:#eceff2;--mu:#9aa3ad;--ac:#2dd4bf;--bd:#2c3137;--dg:#f87171}
+:root{--bg:#f2f4f0;--card:#fff;--ink:#12343b;--mut:#5d7479;--line:#d9e0dc;--acc:#f2b705;--onacc:#12343b;--ok:#2f8f5b;--bad:#b3392f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1d20;--card:#172a2e;--ink:#e8efec;--mut:#8fa6aa;--line:#2a4046;--ok:#4cc58a;--bad:#f0877d}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:14px}
-h1{font-size:20px;margin:4px 0 14px}
-h2{font-size:15px;margin:0 0 10px;color:var(--mu);font-weight:600}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
-input[type=text]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px;margin-bottom:8px}
-button,a.btn{display:inline-block;border:0;border-radius:10px;padding:11px 14px;font-size:15px;font-weight:600;background:var(--ac);color:#fff;text-decoration:none;cursor:pointer}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button,:root:not([data-theme="light"]) a.btn{color:#04201c}}
-button.s{background:transparent;color:var(--ac);border:1px solid var(--bd)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.loc{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
-.loc:first-of-type{border-top:0}
-.loc input{width:22px;height:22px;accent-color:var(--ac)}
-.loc .n{flex:1}.loc small{color:var(--mu);display:block}
-.x{background:none;color:var(--dg);padding:6px 10px;font-size:20px}
-ol{padding-left:0;list-style:none;margin:0}
-.st{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--bd)}
-.st:first-child{border-top:0}
-.num{background:var(--ac);color:#fff;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:13px;flex:none}
-.mu{color:var(--mu);font-size:14px}
-.big{width:100%;text-align:center;margin-top:10px}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 Barlow,system-ui,sans-serif;max-width:640px;margin:0 auto;padding-bottom:90px}
+h1,h2,button,.t{font-family:"Barlow Semi Condensed",system-ui,sans-serif}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:12px 14px 8px;z-index:5}
+.dn{display:flex;align-items:center;gap:8px}
+.dn h1{flex:1;margin:0;font-size:24px;font-weight:700;text-align:center;line-height:1.1}
+.dn h1 small{display:block;font-size:14px;font-weight:500;color:var(--mut)}
+.ic{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:20px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin:10px 0 2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.tabs{display:flex;gap:6px;margin-top:8px}
+.tabs button{flex:1;padding:9px;border:0;border-radius:10px;background:transparent;color:var(--mut);font-size:17px;font-weight:600}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+main{padding:6px 14px}
+.stop{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-radius:12px;padding:12px;margin:10px 0;display:flex;gap:10px}
+.stop.done{border-left-color:var(--ok);opacity:.6}
+.stop.done .nm{text-decoration:line-through}
+.n{width:30px;height:30px;flex:none;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700}
+.stop.done .n{background:var(--ok);color:#fff}
+.b{flex:1;min-width:0}
+.nm{font-size:19px;font-weight:600;font-family:"Barlow Semi Condensed",sans-serif}
+.ad,.nt{color:var(--mut);font-size:15px;overflow-wrap:anywhere}
+.nt{font-style:italic}
+.tag{display:inline-block;font-size:13px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-top:4px}
+.act{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.act a,.act button{flex:1 1 auto;min-width:64px;text-align:center;text-decoration:none;padding:10px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;font-weight:600}
+.act .go{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.act .ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.mv{display:flex;flex-direction:column;gap:4px}
+.mv button{width:34px;height:34px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.fab{position:fixed;right:max(14px,calc(50% - 306px));bottom:calc(16px + env(safe-area-inset-bottom,0px));height:56px;padding:0 22px;border-radius:28px;border:0;background:var(--acc);color:var(--onacc);font-size:19px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.route{display:block;text-align:center;text-decoration:none;background:var(--ink);color:var(--bg);padding:13px;border-radius:12px;font-weight:700;font-size:18px;margin:8px 0}
+dialog{border:0;border-radius:16px;padding:16px;width:min(94vw,520px);background:var(--card);color:var(--ink);max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+label{display:block;font-weight:600;margin:10px 0 4px;font-size:15px}
+input,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;font-weight:600}
+.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.days{display:flex;gap:4px}.days button{flex:1;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700}
+.days button.on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.fr{display:flex;gap:8px;margin-top:16px}.fr button{flex:1;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:18px;font-weight:700}
+.fr .sv{background:var(--ink);color:var(--bg)}.fr .del{color:var(--bad);flex:0 0 auto}
+.pi{display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+.pi input{width:22px;height:22px;flex:none}.pi .b{flex:1}.pi.in{opacity:.5}
+input[type=search]{font-size:16px}
+.row{display:flex;gap:6px}.row input{flex:1;min-width:0}
+.mapbtn{flex:none;padding:0 12px;border-radius:10px;border:0;background:var(--acc);color:var(--onacc);font-weight:700;font-size:16px}
+.hint{font-size:14px;color:var(--mut);margin-top:4px}.hint.okk{color:var(--ok);font-weight:600}.hint.bad{color:var(--bad);font-weight:700}
+.sug{width:100%;border:0;background:var(--acc);color:var(--onacc);font-size:18px;cursor:pointer}
+#op-b ol{padding-left:22px;margin:8px 0}
+select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}#op-b li{margin:5px 0}#op-b .big{font-size:18px;font-weight:700;margin:8px 0}
+.mv,.sug{display:none!important}
 </style>
 </head>
 <body>
-<h1>📍 Rruga e Porosive</h1>
+<header>
+  <div class="dn">
+    <button class="ic" id="prev" aria-label="Dita e mëparshme">‹</button>
+    <h1 id="title"></h1>
+    <button class="ic" id="next" aria-label="Dita tjetër">›</button>
+  </div>
+  <div class="bar"><i id="prog"></i></div>
+  <div class="hint" id="sync" style="text-align:center;margin:2px 0 0"></div>
+  <div class="tabs"><button id="t1" class="on">Dita</button><button id="t2">Vendet</button></div>
+</header>
+<main id="list"></main>
+<button class="fab" id="add">+ Shto në ditë</button>
 
-<div class="card">
-<h2>Shto lokacion</h2>
-<input type="text" id="nm" placeholder="Emri (p.sh. Klienti Ali)">
-<input type="text" id="co" placeholder="Koordinata ose link Google Maps">
-<div class="row">
-<button id="add">Ruaj</button>
-<button class="s" id="gps">Vendndodhja ime</button>
-</div>
-<p class="mu" id="msg" style="margin:8px 0 0">Në Google Maps shtyp gjatë në pikë dhe kopjo koordinatat (p.sh. 41.3275, 19.8187), ose ngjit linkun.</p>
-</div>
-
-<div class="card">
-<h2>Lokacionet e ruajtura (<span id="cnt">0</span>) · zgjedh për rrugën</h2>
-<div id="list"></div>
-<label class="mu" style="display:flex;gap:8px;margin-top:10px;align-items:center"><input type="checkbox" id="usegps" checked> Nis nga vendndodhja ime aktuale</label>
-<button class="big" id="go">Gjej rrugën më të shkurtër</button>
-</div>
-
-<div class="card" id="res" hidden>
-<h2>Rendi i dërgesave</h2>
-<ol id="steps"></ol>
-<p id="tot" style="font-weight:700"></p>
-<a class="btn big" id="gm" target="_blank" rel="noopener">Hap në Google Maps</a>
-<p class="mu" id="warn"></p>
-</div>
+<dialog id="pick">
+  <h2 style="margin:0 0 8px;font-size:22px" id="pk-t">Zgjidh vendet</h2>
+  <input id="pk-q" type="search" placeholder="Kërko emër ose adresë…" autocomplete="off">
+  <div id="pk-l" style="margin:8px 0;max-height:32vh;overflow:auto"></div>
+  <div style="border-top:1px solid var(--line);padding-top:8px">
+    <div class="t" style="font-weight:700;font-size:18px">Vend vetëm për këtë ditë</div>
+    <input id="tp-n" placeholder="Emri (opsionale)" autocomplete="off" style="margin-top:6px">
+    <div class="row" style="margin-top:6px"><input id="tp-l" placeholder="Ngjit linkun ose koordinatat" autocomplete="off"><a class="mapbtn" id="tp-m" target="_blank" rel="noopener" href="https://www.google.com/maps" style="display:grid;place-items:center;text-decoration:none">Hap Maps</a></div>
+    <div class="hint" id="tp-s"></div>
+    <button type="button" class="mapbtn" id="tp-ok" style="width:100%;margin-top:6px;height:44px">Shto vetëm sot</button>
+  </div>
+  <div class="fr"><button id="pk-new">+ Vend i ri</button><button id="pk-x">Mbyll</button><button class="sv" id="pk-ok">Shto</button></div>
+</dialog>
+<dialog id="shr">
+  <h2 style="margin:0 0 8px;font-size:22px">Dërgo listën e ditës</h2>
+  <textarea id="sh-t" rows="11" style="font-size:14px"></textarea>
+  <div class="row" style="margin-top:8px"><a class="mapbtn" id="sh-wa" target="_blank" rel="noopener" style="flex:1;height:44px;display:grid;place-items:center;text-decoration:none">WhatsApp</a><a class="mapbtn" id="sh-vb" target="_blank" rel="noopener" style="flex:1;height:44px;display:grid;place-items:center;text-decoration:none">Viber</a></div>
+  <div class="row" style="margin-top:6px"><button type="button" class="mapbtn" id="sh-cp" style="flex:1;height:44px">Kopjo</button><button type="button" class="mapbtn" id="sh-sh" style="flex:1;height:44px">Shpërndaj</button></div>
+  <div class="hint" id="sh-s"></div>
+  <div class="fr"><button id="sh-x">Mbyll</button></div>
+</dialog>
+<dialog id="opt">
+  <h2 style="margin:0 0 6px;font-size:22px">Rruga e sugjeruar</h2>
+  <div id="op-b"></div>
+  <div class="fr"><button id="op-x">Mbyll</button><button class="sv" id="op-ok">Zbato rendin</button></div>
+</dialog>
+<dialog id="dlg">
+  <h2 id="dt" style="margin:0 0 4px;font-size:22px">Vend i ri</h2>
+  <label>Emri / Klienti</label><input id="f-name" autocomplete="off">
+  <label>Adresa</label><input id="f-addr" autocomplete="off" placeholder="Rruga, qyteti">
+  <label>Pozicioni nga Google Maps</label>
+  <div class="row"><input id="f-link" placeholder="Ngjit linkun ose koordinatat" autocomplete="off"><a class="mapbtn" id="f-maps" target="_blank" rel="noopener" href="https://www.google.com/maps" style="display:grid;place-items:center;text-decoration:none">Hap Maps</a></div>
+  <div class="hint" id="f-st"></div>
+  <button type="button" id="f-gps" class="mapbtn" style="width:100%;margin-top:8px;height:44px">Ruaj pozicionin tim aktual (jam këtu)</button>
+  <label>Telefoni</label><input id="f-tel" type="tel">
+  <label>Shënim (kodi i portës, kati, orari…)</label><textarea id="f-note" rows="2"></textarea>
+  <div class="fr"><button class="del" id="f-del" hidden>Fshi</button><button id="f-cancel">Anulo</button><button class="sv" id="f-save">Ruaj</button></div>
+</dialog>
 
 <script>
-const $=id=>document.getElementById(id);
-let locs=[],sel=new Set();
-const SB='https://kxesbwziuzyjoyobpgvw.supabase.co/rest/v1/locations';
-const H={apikey:'sb_publishable_WgVdMUOR7N9FgJJwz54VtA_4UAPrLuW','Content-Type':'application/json'};
-try{locs=JSON.parse(localStorage.getItem('locs')||'[]')}catch(e){}
-function cache(){try{localStorage.setItem('locs',JSON.stringify(locs))}catch(e){}}
-async function load(){
-  try{
-    const r=await fetch(SB+'?select=*&order=created_at.asc',{headers:H});
-    if(!r.ok)throw new Error(r.status);
-    locs=await r.json();cache();
-  }catch(e){$('msg').textContent='Pa lidhje me databazën: po shfaqen lokacionet e ruajtura në telefon.'}
-  render();
-}
-function parse(s){
-  const m=s.match(/(-?\d{1,3}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)/);
-  return m?{lat:+m[1],lng:+m[2]}:null;
-}
+var DN=["E diel","E hënë","E martë","E mërkurë","E enjte","E premte","E shtunë"];
+var MN=["janar","shkurt","mars","prill","maj","qershor","korrik","gusht","shtator","tetor","nëntor","dhjetor"];
+var db={places:[],plans:{},done:{},seq:1};
+try{var raw=localStorage.getItem("dergesat");if(raw){var o=JSON.parse(raw);
+  if(o.stops){o.places=o.stops.map(function(x){return{id:x.id,name:x.name,addr:x.addr,tel:x.tel,note:x.note}});o.plans=o.plans||{};
+    o.stops.forEach(function(x){if(x.kind==="once"&&x.date){(o.plans[x.date]=o.plans[x.date]||[]).push(x.id)}});delete o.stops}
+  db=o}}catch(e){}
+function save(){try{localStorage.setItem("dergesat",JSON.stringify(db))}catch(e){}if(typeof syncOut==="function")syncOut()}
+function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+var cur=new Date();cur.setHours(12,0,0,0);
+var tab=1,editId=null,addAfter=false,sel={},q="";
+var $=function(i){return document.getElementById(i)};
+function esc(t){return String(t||"").replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function byId(id){return db.places.filter(function(s){return s.id==id})[0]}
+function dayIds(){var k=iso(cur);return db.plans[k]=db.plans[k]||[]}
+function forDay(){return dayIds().map(byId).filter(Boolean)}
+function isDone(id){return !!(db.done[iso(cur)]||{})[id]}
+function match(s,t){t=t.toLowerCase();return !t||(s.name+" "+s.addr).toLowerCase().indexOf(t)>-1}
 function render(){
-  $('cnt').textContent=locs.length;
-  $('list').innerHTML=locs.length?'':'<p class="mu">Ende pa lokacione.</p>';
-  locs.forEach((l,i)=>{
-    const d=document.createElement('div');d.className='loc';
-    d.innerHTML='<input type="checkbox"'+(sel.has(l.id)?' checked':'')+'><div class="n"></div><button class="x" aria-label="Fshi">×</button>';
-    d.querySelector('.n').innerHTML='<b></b><small></small>';
-    d.querySelector('b').textContent=l.name;
-    d.querySelector('small').textContent=l.lat.toFixed(5)+', '+l.lng.toFixed(5);
-    d.querySelector('input').onchange=e=>{e.target.checked?sel.add(l.id):sel.delete(l.id)};
-    d.querySelector('.x').onclick=async()=>{
-      if(!confirm('Fshi "'+l.name+'"?'))return;
-      try{
-        const r=await fetch(SB+'?id=eq.'+l.id,{method:'DELETE',headers:H});
-        if(!r.ok)throw new Error(r.status);
-        locs.splice(i,1);sel.delete(l.id);cache();render();
-      }catch(e){alert('Nuk u fshi. Kontrollo internetin.')}
-    };
-    $('list').appendChild(d);
-  });
-}
-$('add').onclick=async()=>{
-  const n=$('nm').value.trim(),c=parse($('co').value);
-  if(!n||!c){$('msg').textContent='Shkruaj emrin dhe koordinata të vlefshme.';return}
-  $('msg').textContent='Po ruhet…';
-  try{
-    const r=await fetch(SB,{method:'POST',headers:{...H,Prefer:'return=representation'},body:JSON.stringify({name:n,lat:c.lat,lng:c.lng})});
-    if(!r.ok)throw new Error(r.status);
-    const row=(await r.json())[0];
-    locs.push(row);cache();render();
-    $('nm').value='';$('co').value='';$('msg').textContent='U ruajt ✓';
-  }catch(e){$('msg').textContent='Nuk u ruajt ('+e.message+'). Kontrollo internetin dhe tabelën në Supabase.'}
-};
-function getPos(){return new Promise(r=>{
-  if(!navigator.geolocation)return r(null);
-  navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(null),{timeout:8000,enableHighAccuracy:true});
-})}
-$('gps').onclick=async()=>{
-  $('msg').textContent='Po marr vendndodhjen…';
-  const p=await getPos();
-  if(p){$('co').value=p.lat.toFixed(6)+', '+p.lng.toFixed(6);$('msg').textContent='Vendndodhja u mor. Shkruaj emrin dhe shtyp Ruaj.'}
-  else $('msg').textContent='Nuk u mor vendndodhja. Lejo qasjen në GPS.';
-};
-function hav(a,b){
-  const R=6371,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dg=r(b.lng-a.lng);
-  const h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dg/2)**2;
-  return 2*R*Math.asin(Math.sqrt(h));
-}
-function solve(start,pts){
-  // nearest neighbour, then 2-opt (start fixed at index 0)
-  let rest=pts.slice(),path=[start];
-  while(rest.length){
-    const last=path[path.length-1];let bi=0;
-    rest.forEach((p,i)=>{if(hav(last,p)<hav(last,rest[bi]))bi=i});
-    path.push(rest.splice(bi,1)[0]);
-  }
-  let imp=true;
-  while(imp){imp=false;
-    for(let i=1;i<path.length-1;i++)for(let j=i+1;j<path.length;j++){
-      const a=path[i-1],b=path[i],c=path[j],d=path[j+1];
-      const old=hav(a,b)+(d?hav(c,d):0),nw=hav(a,c)+(d?hav(b,d):0);
-      if(nw<old-1e-9){path=path.slice(0,i).concat(path.slice(i,j+1).reverse(),path.slice(j+1));imp=true}
+  var today=iso(new Date())===iso(cur),h="",items;
+  $("title").innerHTML=tab===1?DN[cur.getDay()]+", "+cur.getDate()+" "+MN[cur.getMonth()]+"<small>"+(today?"Sot":cur.getFullYear())+"</small>":"Vendet e ruajtura<small>"+db.places.filter(function(s){return !s.temp}).length+" vende</small>";
+  $("t1").className=tab===1?"on":"";$("t2").className=tab===2?"on":"";
+  $("prev").style.visibility=$("next").style.visibility=tab===1?"visible":"hidden";
+  $("add").textContent=tab===1?"+ Shto në ditë":"+ Vend i ri";
+  if(tab===1){
+    items=forDay();
+    var nd=items.filter(function(s){return isDone(s.id)}).length;
+    $("prog").style.width=items.length?(nd/items.length*100)+"%":"0";
+    if(!items.length)h='<div class="empty">Asnjë dërgesë për këtë ditë.<br>Shtyp “+ Shto në ditë” dhe zgjidh nga vendet e ruajtura.</div>';
+    else{
+      var todo=items.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
+      if(items.length>1)h+='<button class="route sug" data-a="sug">Sugjero rrugën më të mirë</button>';
+      if(todo.length){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(todo.slice(0,9),todo.length<=9)+'">Hap rrugën në Maps'+(todo.length>9?' (9 të parat nga '+todo.length+')':' ('+todo.length+' ndalesa)')+'</a>'}
+      h+='<button class="route" data-a="share" style="width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer">Dërgo listën e ditës</button>';h+=mapSvg(items);
+      h+='<div class="t" style="color:var(--mut);margin:4px 2px">'+nd+' nga '+items.length+' të kryera</div>';
+      items.forEach(function(s,i){h+=card(s,i,true,i===0,i===items.length-1)});
     }
+  }else{
+    $("prog").style.width="0";
+    h='<input type="search" id="sq" placeholder="Kërko në vendet e ruajtura…" value="'+esc(q)+'" style="margin:6px 0">';
+    items=db.places.filter(function(s){return !s.temp&&match(s,q)}).sort(function(a,b){return a.name.localeCompare(b.name)});
+    if(!db.places.length)h+='<div class="empty">Nuk ke asnjë vend të ruajtur ende.<br>Shtyp “+ Vend i ri”.</div>';
+    items.forEach(function(s,i){h+=card(s,i,false)});
   }
-  return path;
+  $("list").innerHTML=h;
+  var sq=$("sq");if(sq){sq.oninput=function(){q=sq.value;var p=sq.selectionStart;render();var n=$("sq");n.focus();n.setSelectionRange(p,p)}}
 }
-$('go').onclick=async()=>{
-  const pts=locs.filter(l=>sel.has(l.id));
-  if(!pts.length){alert('Zgjidh të paktën një lokacion.');return}
-  let start=null;
-  if($('usegps').checked){$('go').textContent='Po llogaris…';start=await getPos();$('go').textContent='Gjej rrugën më të shkurtër'}
-  const gpsOk=!!start;
-  let path;
-  if(gpsOk)path=solve({...start,name:'Nisja (ti)'},pts);
-  else{path=solve(pts[0],pts.slice(1))}
-  let tot=0;$('steps').innerHTML='';
-  path.forEach((p,i)=>{
-    const leg=i?hav(path[i-1],p):0;tot+=leg;
-    const li=document.createElement('li');li.className='st';
-    li.innerHTML='<span class="num"></span><div><b></b><div class="mu"></div></div>';
-    li.querySelector('.num').textContent=i===0&&gpsOk?'●':(gpsOk?i:i+1);
-    li.querySelector('b').textContent=p.name;
-    li.querySelector('.mu').textContent=i?('+'+leg.toFixed(1)+' km në vijë të drejtë'):(gpsOk?'Pika e nisjes':'Pika e parë');
-    $('steps').appendChild(li);
-  });
-  $('tot').textContent='Gjithsej ≈ '+tot.toFixed(1)+' km (në vijë të drejtë)';
-  const stops=gpsOk?path.slice(1):path;
-  const f=p=>p.lat+','+p.lng;
-  const dest=stops[stops.length-1],way=stops.slice(gpsOk?0:1,-1).slice(0,9);
-  let u='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+f(dest);
-  if(!gpsOk&&stops.length>1)u+='&origin='+f(stops[0]);
-  if(way.length)u+='&waypoints='+way.map(f).join('|');
-  $('gm').href=u;
-  $('warn').textContent=(stops.length>10?'Google Maps merr deri në 9 ndalesa të ndërmjetme; u përfshinë të parat. ':'')+(gpsOk?'':'GPS nuk u përdor: rruga nis nga lokacioni i parë i zgjedhur.');
-  $('res').hidden=false;$('res').scrollIntoView({behavior:'smooth'});
+function card(s,i,day,first,last){
+  var q2=encodeURIComponent(s.lat!=null?s.lat+","+s.lng:(s.addr||s.name)),a='<div class="act">';
+  if(day){a+='<button class="ok" data-a="done" data-id="'+s.id+'">'+(isDone(s.id)?"Ktheje":"Kryer ✓")+'</button>'}
+  else{var inD=dayIds().indexOf(s.id)>-1;a+='<button class="go" data-a="addday" data-id="'+s.id+'"'+(inD?" disabled":"")+'>'+(inD?"Është në ditë":"Shto në "+cur.getDate()+" "+MN[cur.getMonth()])+'</button>'}
+  if(s.addr||s.lat!=null)a+='<a '+(day?'class="go" ':'')+'target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+q2+'">Navigo</a>';
+  if(s.tel)a+='<a href="tel:'+esc(s.tel)+'">Telefono</a>';
+  a+='<button data-a="edit" data-id="'+s.id+'">Ndrysho</button>';
+  if(day)a+='<button data-a="rm" data-id="'+s.id+'">Hiqe</button>';
+  a+='</div>';
+  return '<div class="stop'+(day&&isDone(s.id)?" done":"")+'">'+(day?'<div class="n">'+(i+1)+'</div>':'')
+    +'<div class="b"><div class="nm">'+esc(s.name)+'</div><div class="ad">'+esc(s.addr)+'</div>'+(s.note?'<div class="nt">'+esc(s.note)+'</div>':'')+(day&&s.lat==null?'<div class="hint">⚠ Pa pozicion nga Maps: nuk renditet automatikisht</div>':'')+a+'</div>'
+    +(day?'<div class="mv"><button data-a="up" data-id="'+s.id+'"'+(first?" disabled":"")+' aria-label="Sus">▲</button><button data-a="dn" data-id="'+s.id+'"'+(last?" disabled":"")+' aria-label="Poshtë">▼</button></div>':'')+'</div>';
+}
+$("list").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-a]");if(!b)return;
+  var id=+b.dataset.id,a=b.dataset.a,k=iso(cur),l=dayIds();
+  if(a==="done"){db.done[k]=db.done[k]||{};db.done[k][id]=db.done[k][id]?0:Date.now()}
+  else if(a==="sug"){suggest(b);return}
+  else if(a==="share"){openShare();return}
+  else if(a==="edit"){openDlg(byId(id));return}
+  else if(a==="addday"){if(l.indexOf(id)<0)l.push(id)}
+  else if(a==="rm"){l.splice(l.indexOf(id),1)}
+  else{var i=l.indexOf(id),j=a==="up"?i-1:i+1;if(j<0||j>=l.length)return;var t=l[i];l[i]=l[j];l[j]=t}
+  save();render();
+});
+$("prev").onclick=function(){cur.setDate(cur.getDate()-1);render()};
+$("next").onclick=function(){cur.setDate(cur.getDate()+1);render()};
+$("t1").onclick=function(){tab=1;render()};$("t2").onclick=function(){tab=2;render()};
+$("add").onclick=function(){if(tab===1)openPick();else{addAfter=false;openDlg(null)}};
+function openPick(){sel={};$("tp-n").value="";$("tp-l").value="";$("tp-s").textContent="";$("pk-q").value="";$("pk-t").textContent="Zgjidh vendet për "+cur.getDate()+" "+MN[cur.getMonth()];drawPick();$("pick").showModal()}
+function drawPick(){
+  var l=dayIds(),items=db.places.filter(function(s){return !s.temp&&match(s,$("pk-q").value)}).sort(function(a,b){return a.name.localeCompare(b.name)});
+  $("pk-l").innerHTML=items.length?items.map(function(s){var inD=l.indexOf(s.id)>-1;
+    return '<label class="pi'+(inD?" in":"")+'" style="margin:0"><input type="checkbox" data-id="'+s.id+'"'+(inD?" checked disabled":(sel[s.id]?" checked":""))+'><div class="b"><div class="nm">'+esc(s.name)+'</div><div class="ad">'+esc(s.addr)+'</div></div></label>'}).join(""):'<div class="empty">Asnjë vend. Shtyp “+ Vend i ri”.</div>';
+  var n=Object.keys(sel).length;$("pk-ok").textContent=n?"Shto ("+n+")":"Shto"}
+$("pk-q").oninput=drawPick;
+$("pk-l").addEventListener("change",function(e){var c=e.target;if(c.dataset.id){if(c.checked)sel[c.dataset.id]=1;else delete sel[c.dataset.id];drawPick()}});
+$("pk-x").onclick=function(){$("pick").close()};
+$("pk-ok").onclick=function(){var l=dayIds(),n=0;Object.keys(sel).forEach(function(id){if(l.indexOf(+id)<0){l.push(+id);n++}});
+  if($("tp-l").value.trim()){if(!addTemp())return;n++}
+  if(!n){$("tp-s").textContent="Zgjidh të paktën një vend nga lista, ose ngjit link/koordinata.";return}
+  try{save()}catch(e){fail(e)}$("pick").close();render()};
+$("pk-new").onclick=function(){$("pick").close();addAfter=true;openDlg(null)};
+function openDlg(s){
+  editId=s?s.id:null;$("dt").textContent=s?"Ndrysho vendin":"Vend i ri";
+  $("f-name").value=s?s.name:"";$("f-addr").value=s?s.addr:"";$("f-tel").value=s?s.tel:"";$("f-note").value=s?s.note:"";
+  pLat=s&&s.lat!=null?s.lat:null;pLng=s&&s.lat!=null?s.lng:null;$("f-link").value="";
+  showSt();resetDel();$("f-del").hidden=!s;$("dlg").showModal();
+}
+var pLat=null,pLng=null,HINT="Më e sigurta: në Maps shtyp gjatë mbi vendin që do, pastaj shtyp koordinatat që shfaqen (p.sh. 41.3275, 19.8187) që të kopjohen, dhe ngjiti këtu. Ose shtyp butonin poshtë nëse je fizikisht aty.";
+function showSt(msg,ok){var e=$("f-st");if(msg){e.textContent=msg;e.className="hint"+(ok?" okk":"");return}
+  if(pLat!=null){e.textContent="✓ Pozicioni i ruajtur: "+(+pLat).toFixed(5)+", "+(+pLng).toFixed(5);e.className="hint okk"}else{e.textContent=HINT;e.className="hint"}}
+function parseMaps(t){
+  t=(t||"").trim();if(!t){showSt();return}
+  var u=t;try{u=decodeURIComponent(t.replace(/\+/g," "))}catch(e){}
+  var dm=u.match(/(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([NS])[,\s]+(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([EW])/i),dd=dm?[0,(dm[4].toUpperCase()=="S"?-1:1)*(+dm[1]+dm[2]/60+dm[3]/3600),(dm[8].toUpperCase()=="W"?-1:1)*(+dm[5]+dm[6]/60+dm[7]/3600)]:null;
+  var m=dd||u.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||u.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||u.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/\/maps\/(?:place|search)\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/^\s*(-?\d{1,3}\.\d+)\s*[,;]?\s*(-?\d{1,3}\.\d+)\s*$/);
+  if(!m){showSt(/goo\.gl|maps\.app/i.test(t)?"Ky është link i shkurtër dhe nuk mund ta lexoj. Hape në shfletues dhe kopjo linkun e plotë nga shiriti, ose shtyp gjatë pikën në Maps dhe kopjo koordinatat.":"Nuk gjeta koordinata. Ngjit linkun e plotë ose koordinatat.");return}
+  pLat=+m[1];pLng=+m[2];
+  var p=u.match(/\/maps\/place\/([^\/@?]+)/);
+  if(p){var txt=p[1].trim();if(!$("f-name").value.trim())$("f-name").value=txt.split(",")[0];if(!$("f-addr").value.trim())$("f-addr").value=txt}
+  showSt();
+}
+$("f-link").oninput=function(){parseMaps(this.value)};
+$("f-maps").onclick=function(){var t=($("f-addr").value||$("f-name").value).trim();this.href=t?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(t):"https://www.google.com/maps"};
+function hav(a,b){var R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lng-a.lng)*r,x=Math.pow(Math.sin(dl/2),2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.pow(Math.sin(dn/2),2);return 2*R*Math.asin(Math.sqrt(x))}
+function plen(st,p){var d=0,c=st;p.forEach(function(s){d+=hav(c,s);c=s});return d}
+function opt(st,pts){var rest=pts.slice(),p=[],c=st;
+  while(rest.length){var bi=0,bd=1e9;rest.forEach(function(s,i){var d=hav(c,s);if(d<bd){bd=d;bi=i}});c=rest.splice(bi,1)[0];p.push(c)}
+  var imp=true,best=plen(st,p);
+  while(imp){imp=false;for(var i=0;i<p.length-1;i++)for(var j=i+1;j<p.length;j++){var q=p.slice(0,i).concat(p.slice(i,j+1).reverse(),p.slice(j+1)),l=plen(st,q);if(l<best-1e-6){p=q;best=l;imp=true}}}
+  return p}
+function loc(s){return s.lat!=null?s.lat+','+s.lng:s.addr}
+function mapsUrl(ch){var wp=ch.slice(0,-1).map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+encodeURIComponent(loc(ch[ch.length-1]))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
+function mapSvg(items){
+  var P=[];items.forEach(function(s,i){if(s.lat!=null)P.push({s:s,n:i+1})});
+  if(!P.length)return '';
+  var W=340,H=230,pd=26,la=P.map(function(p){return p.s.lat}),ln=P.map(function(p){return p.s.lng}),
+  mnLa=Math.min.apply(null,la),mxLa=Math.max.apply(null,la),mnLn=Math.min.apply(null,ln),mxLn=Math.max.apply(null,ln),
+  cs=Math.cos((mnLa+mxLa)/2*Math.PI/180),dx=(mxLn-mnLn)*cs,dy=mxLa-mnLa,
+  k=Math.min((W-2*pd)/(dx||1e-6),(H-2*pd)/(dy||1e-6)),ox=(W-dx*k)/2,oy=(H-dy*k)/2;
+  if(!dx&&!dy){k=0}
+  var pt=P.map(function(p){return {x:ox+(p.s.lng-mnLn)*cs*k,y:oy+(mxLa-p.s.lat)*k,n:p.n,d:isDone(p.s.id)}});
+  var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'
+   +'<polyline points="'+pt.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ')+'" style="fill:none;stroke:var(--acc);stroke-width:3;stroke-dasharray:6 5"/>';
+  pt.forEach(function(p){g+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="13" style="fill:'+(p.d?'var(--ok)':'var(--ink)')+'"/><text x="'+p.x.toFixed(1)+'" y="'+(p.y+5).toFixed(1)+'" text-anchor="middle" style="fill:var(--bg);font:700 14px Barlow,sans-serif">'+p.n+'</text>'});
+  g+='</svg>';
+  return '<div class="stop" style="display:block;border-left-color:var(--line)"><div class="t" style="font-weight:600">Harta e ndalesave</div>'+g+'<div class="hint">Pamje skematike: vetëm pozicionet dhe radha, pa rrugë. Për hartën e plotë shtyp “Hap rrugën në Maps”.</div></div>';
+}
+var sugState=null;
+function suggest(btn){
+  var rem=forDay().filter(function(s){return !isDone(s.id)}),pos=rem.filter(function(s){return s.lat!=null});
+  if(pos.length<2){alert('Duhen të paktën 2 ndalesa të pakryera me pozicion nga Maps.');return}
+  var old=btn.textContent;btn.textContent='Po e marr pozicionin tuaj…';
+  var go=function(st,why){btn.textContent=old;compute(rem,pos,st,why)};
+  if(!navigator.geolocation){go(null,'Pa GPS: rruga fillon nga ndalesa më e përshtatshme.');return}
+  navigator.geolocation.getCurrentPosition(function(p){go({lat:p.coords.latitude,lng:p.coords.longitude},'Llogaritur nga pozicioni juaj aktual.')},function(){go(null,'GPS nuk u lejua: rruga fillon nga ndalesa më e përshtatshme.')},{timeout:8000,enableHighAccuracy:true,maximumAge:30000});
+}
+function compute(rem,pos,st,why){
+  var best,curC,newC;
+  if(st){best=opt(st,pos);curC=plen(st,pos);newC=plen(st,best)}
+  else{var bl=1e18;pos.forEach(function(s){var o=pos.filter(function(x){return x!==s}),l=plen(s,opt(s,o));if(l<bl){bl=l;best=[s].concat(opt(s,o))}});curC=plen(pos[0],pos.slice(1));newC=plen(best[0],best.slice(1))}
+  sugState={best:best,rem:rem};
+  var better=newC<curC-0.05,h='<div class="hint">'+why+'</div>';
+  h+='<div class="big">'+(better?'Rendi aktual: '+curC.toFixed(1)+' km → i sugjeruar: '+newC.toFixed(1)+' km':'Rendi aktual është tashmë shumë i mirë ('+curC.toFixed(1)+' km)')+'</div>';
+  h+='<div class="hint">Distancat janë në vijë të drejtë, jo sipas rrugëve reale. Google Maps i llogarit rrugët reale mes ndalesave.</div><ol>';
+  best.forEach(function(s){h+='<li><b>'+esc(s.name)+'</b><br><span class="ad">'+esc(s.addr)+'</span></li>'});
+  h+='</ol>';
+  var np=rem.filter(function(s){return s.lat==null});
+  if(np.length)h+='<div class="hint">⚠ Pa pozicion (mbeten në fund): '+np.map(function(s){return esc(s.name)}).join(', ')+'</div>';
+  $('op-b').innerHTML=h;$('opt').showModal();
+}
+$('op-x').onclick=function(){$('opt').close()};
+$('op-ok').onclick=function(){var k=iso(cur),done=dayIds().filter(isDone),ids=done.concat(sugState.best.map(function(s){return s.id}),sugState.rem.filter(function(s){return s.lat==null}).map(function(s){return s.id}));db.plans[k]=ids;save();$('opt').close();render()};
+$("f-gps").onclick=function(){
+  if(!navigator.geolocation){showSt("Ky pajisje nuk ka GPS.");return}
+  showSt("Po e marr pozicionin…");
+  navigator.geolocation.getCurrentPosition(function(p){pLat=p.coords.latitude;pLng=p.coords.longitude;showSt()},function(){showSt("GPS nuk u lejua. Lejoje për këtë faqe ose përdor koordinatat nga Maps.")},{timeout:10000,enableHighAccuracy:true});
 };
-render();load();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+function armDel(b){if(b.dataset.sure)return true;b.dataset.sure="1";b.textContent="Prek përsëri: fshi";return false}
+function resetDel(){var b=$("f-del");delete b.dataset.sure;b.textContent="Fshi"}
+var ctx=null;
+function suggest(btn){
+  var rem=forDay().filter(function(s){return !isDone(s.id)}),pos=rem.filter(function(s){return s.lat!=null});
+  if(pos.length<2){$('op-b').innerHTML='<div class="big">Nuk ka çfarë të sugjerohet</div><div class="hint">Duhen të paktën 2 ndalesa të pakryera me pozicion nga Maps. Shto pozicionin te “Ndrysho” (koordinata nga Maps ose butoni GPS).</div>';$('op-ok').hidden=true;$('opt').showModal();return}
+  var old=btn.textContent,fin=false,tm;
+  btn.textContent='Po e marr pozicionin tuaj…';
+  var go=function(st,why){if(fin)return;fin=true;clearTimeout(tm);btn.textContent=old;compute(rem,pos,st,why)};
+  tm=setTimeout(function(){go(null,'GPS nuk u përgjigj.')},9000);
+  if(!navigator.geolocation){go(null,'Ky shfletues nuk e jep GPS-in për këtë faqe.');return}
+  try{navigator.geolocation.getCurrentPosition(function(p){go({lat:p.coords.latitude,lng:p.coords.longitude},'Llogaritur nga pozicioni juaj aktual (GPS).')},function(){go(null,'GPS nuk u lejua nga shfletuesi për këtë faqe.')},{timeout:8000,enableHighAccuracy:true,maximumAge:30000})}catch(e){go(null,'GPS nuk është i disponueshëm.')}
+}
+function compute(rem,pos,st,why,forced){
+  ctx={rem:rem,pos:pos,st:st,why:why};
+  var best,curC,newC;
+  if(st){best=opt(st,pos);curC=plen(st,pos);newC=plen(st,best)}
+  else if(forced){var o=pos.filter(function(x){return x!==forced});best=[forced].concat(opt(forced,o));curC=plen(forced,o);newC=plen(forced,best.slice(1))}
+  else{var bl=1e18;pos.forEach(function(s){var o=pos.filter(function(x){return x!==s}),p=opt(s,o),l=plen(s,p);if(l<bl){bl=l;best=[s].concat(p)}});curC=plen(pos[0],pos.slice(1));newC=plen(best[0],best.slice(1))}
+  sugState={best:best,rem:rem};
+  var better=newC<curC-0.05,h='<div class="hint">'+why+'</div>';
+  if(!st)h+='<label>Ku ndodhet shoferi tani?</label><select id="op-s"><option value="">Automatike (nisja më e përshtatshme)</option>'+pos.map(function(s){return '<option value="'+s.id+'"'+(forced&&forced.id===s.id?' selected':'')+'>Afër: '+esc(s.name)+'</option>'}).join('')+'</select>';
+  h+='<div class="big">'+(better?'Rendi aktual: '+curC.toFixed(1)+' km → i sugjeruar: '+newC.toFixed(1)+' km':'Rendi aktual është tashmë shumë i mirë ('+curC.toFixed(1)+' km)')+'</div>';
+  h+='<div class="hint">Distancat janë në vijë të drejtë, jo sipas rrugëve reale. Butoni “Hap rrugën në Maps” nis gjithmonë nga pozicioni i telefonit dhe Maps i llogarit rrugët reale.</div><ol>';
+  best.forEach(function(s){h+='<li><b>'+esc(s.name)+'</b><br><span class="ad">'+esc(s.addr)+'</span></li>'});
+  h+='</ol>';
+  var np=rem.filter(function(s){return s.lat==null});
+  if(np.length)h+='<div class="hint">⚠ Pa pozicion (mbeten në fund): '+np.map(function(s){return esc(s.name)}).join(', ')+'</div>';
+  $('op-b').innerHTML=h;$('op-ok').hidden=false;
+  var sl=$('op-s');if(sl)sl.onchange=function(){compute(ctx.rem,ctx.pos,ctx.st,ctx.why,sl.value?byId(+sl.value):null)};
+  if(!$('opt').open)$('opt').showModal();
+}
+var DEPOT={lat:42.2139,lng:20.7397,name:'Prizren'};
+function plen(st,p,en){var d=0,c=st;p.forEach(function(s){d+=hav(c,s);c=s});if(en)d+=hav(c,en);return d}
+function opt(st,pts,en){var rest=pts.slice(),p=[],c=st;
+  while(rest.length){var bi=0,bd=1e9;rest.forEach(function(s,i){var d=hav(c,s);if(d<bd){bd=d;bi=i}});c=rest.splice(bi,1)[0];p.push(c)}
+  var imp=true,best=plen(st,p,en);
+  while(imp){imp=false;for(var i=0;i<p.length-1;i++)for(var j=i+1;j<p.length;j++){var q=p.slice(0,i).concat(p.slice(i,j+1).reverse(),p.slice(j+1)),l=plen(st,q,en);if(l<best-1e-6){p=q;best=l;imp=true}}}
+  return p}
+function mapsUrl(ch,back){var all=back?ch:ch.slice(0,-1),dest=back?DEPOT:ch[ch.length-1],wp=all.map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+encodeURIComponent(loc(dest))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
+function suggest(btn){
+  var rem=forDay().filter(function(s){return !isDone(s.id)}),pos=rem.filter(function(s){return s.lat!=null});
+  if(!pos.length){$('op-b').innerHTML='<div class="big">Nuk ka çfarë të sugjerohet</div><div class="hint">Asnjë ndalesë e pakryer nuk ka pozicion nga Maps. Shto pozicionin te “Ndrysho”.</div>';$('op-ok').hidden=true;$('opt').showModal();return}
+  compute(rem,pos,'depot','',null);
+}
+function compute(rem,pos,mode,note,gps){
+  var forced=(mode!=='gps'&&mode!=='depot')?byId(+mode):null,st=mode==='gps'?gps:DEPOT,best,curC,newC;
+  if(forced){var o=pos.filter(function(x){return x!==forced});best=[forced].concat(opt(forced,o,DEPOT));curC=plen(forced,o,DEPOT);newC=plen(forced,best.slice(1),DEPOT)}
+  else{best=opt(st,pos,DEPOT);curC=plen(st,pos,DEPOT);newC=plen(st,best,DEPOT)}
+  sugState={best:best,rem:rem};
+  var better=newC<curC-0.05,sel=function(v){return mode===v?' selected':''};
+  var h='<div class="hint" id="op-n">'+note+'</div><label>Nisja nga</label><select id="op-s"><option value="depot"'+sel('depot')+'>Prizreni (depo)</option><option value="gps"'+sel('gps')+'>Pozicioni im aktual (GPS)</option>'+pos.map(function(s){return '<option value="'+s.id+'"'+sel(String(s.id))+'>Afër: '+esc(s.name)+'</option>'}).join('')+'</select>';
+  h+='<div class="big">'+(better?'Rendi aktual: '+curC.toFixed(1)+' km → i sugjeruar: '+newC.toFixed(1)+' km':'Rendi aktual është tashmë shumë i mirë ('+curC.toFixed(1)+' km)')+'</div>';
+  h+='<div class="hint">Llogaritur me kthim në Prizren në fund. Distancat janë në vijë të drejtë, jo sipas rrugëve reale; Google Maps i llogarit rrugët reale.</div>';
+  h+='<div class="hint">'+(forced?'Nisja afër ndalesës së parë.':(mode==='gps'?'Nisja: pozicioni juaj':'Nisja: Prizren'))+'</div><ol>';
+  best.forEach(function(s){h+='<li><b>'+esc(s.name)+'</b><br><span class="ad">'+esc(s.addr)+'</span></li>'});
+  h+='</ol><div class="hint">Kthimi: Prizren</div>';
+  var np=rem.filter(function(s){return s.lat==null});
+  if(np.length)h+='<div class="hint">⚠ Pa pozicion (mbeten në fund): '+np.map(function(s){return esc(s.name)}).join(', ')+'</div>';
+  $('op-b').innerHTML=h;$('op-ok').hidden=false;
+  var sl=$('op-s');sl.onchange=function(){var v=sl.value;if(v!=='gps'){compute(rem,pos,v,'',null);return}
+    var fin=false,tm,done=function(p,msg){if(fin)return;fin=true;clearTimeout(tm);if(p)compute(rem,pos,'gps','Nisur nga pozicioni juaj aktual.',p);else compute(rem,pos,'depot',msg,null)};
+    $('op-n').textContent='Po e marr pozicionin…';
+    tm=setTimeout(function(){done(null,'GPS nuk u përgjigj. U përdor Prizreni si nisje.')},9000);
+    if(!navigator.geolocation){done(null,'GPS nuk është i disponueshëm. U përdor Prizreni si nisje.');return}
+    try{navigator.geolocation.getCurrentPosition(function(p){done({lat:p.coords.latitude,lng:p.coords.longitude})},function(){done(null,'GPS nuk u lejua. U përdor Prizreni si nisje.')},{timeout:8000,enableHighAccuracy:true,maximumAge:30000})}catch(e){done(null,'GPS nuk është i disponueshëm.')}
+  };
+  if(!$('opt').open)$('opt').showModal();
+}
+function autoOrder(){
+  if(!ready)return;var k=iso(cur),ids=db.plans[k];if(!ids||!ids.length)return;
+  var items=ids.map(byId).filter(Boolean),d=db.done[k]||{};
+  var done=items.filter(function(s){return d[s.id]}).sort(function(a,b){return Number(d[a.id])-Number(d[b.id])});
+  var rem=items.filter(function(s){return !d[s.id]}),pos=rem.filter(function(s){return s.lat!=null}),np=rem.filter(function(s){return s.lat==null});
+  var st=DEPOT;for(var i=done.length-1;i>=0;i--){if(done[i].lat!=null){st=done[i];break}}
+  var ord=done.concat(opt(st,pos,DEPOT),np).map(function(s){return s.id});
+  if(ord.join()!==ids.join()){db.plans[k]=ord;save()}
+}
+var _render=render;render=function(){if(tab===1)autoOrder();_render()};
+function readPos(t){t=(t||"").trim();if(!t)return null;var u=t;try{u=decodeURIComponent(t.replace(/\+/g," "))}catch(e){}
+  var dm=u.match(/(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([NS])[,\s]+(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([EW])/i),dd=dm?[0,(dm[4].toUpperCase()=="S"?-1:1)*(+dm[1]+dm[2]/60+dm[3]/3600),(dm[8].toUpperCase()=="W"?-1:1)*(+dm[5]+dm[6]/60+dm[7]/3600)]:null;
+  var m=dd||u.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||u.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||u.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/\/maps\/(?:place|search)\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/^\s*(-?\d{1,3}\.\d+)\s*[,;]?\s*(-?\d{1,3}\.\d+)\s*$/);
+  if(!m)return /goo\.gl|maps\.app/i.test(t)?"short":null;
+  var p=u.match(/\/maps\/place\/([^\/@?]+)/);return {lat:+m[1],lng:+m[2],txt:p?p[1].trim():""}}
+$("tp-m").onclick=function(){var t=$("tp-n").value.trim();this.href=t?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(t):"https://www.google.com/maps"};
+function addTemp(){var r=readPos($("tp-l").value),st=$("tp-s");
+  if(r==="short"){st.textContent="Ky është link i shkurtër. Përdor koordinatat nga Maps (shtyp gjatë mbi vendin).";return false}
+  if(!r){st.textContent="Ngjit një link të plotë ose koordinata (p.sh. 42.2139, 20.7397).";return false}
+  var o={id:newId(),name:$("tp-n").value.trim()||(r.txt?r.txt.split(",")[0]:"Vend i ri"),addr:r.txt||"",tel:"",note:"",lat:r.lat,lng:r.lng,temp:true};
+  db.places.push(o);dayIds().push(o.id);return true}
+$("tp-ok").onclick=function(){if(addTemp()){save();$("pick").close();render()}};
+function shareText(){
+  var it=forDay(),t="📦 Dërgesat: "+DN[cur.getDay()]+", "+cur.getDate()+" "+MN[cur.getMonth()]+"\n";
+  it.forEach(function(s,i){t+="\n"+(i+1)+". "+s.name+(isDone(s.id)?" ✓":"")+"\n";if(s.addr)t+="   "+s.addr+"\n";if(s.tel)t+="   📞 "+s.tel+"\n";if(s.note)t+="   ℹ️ "+s.note+"\n"});
+  var go=it.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
+  if(go.length){t+="\n🗺 Rruga në Maps (kthimi në Prizren në fund):\n";
+    for(var i=0;i<go.length;i+=9){var ch=go.slice(i,i+9),last=i+9>=go.length,o=i?"&origin="+encodeURIComponent(loc(go[i-1])):"";
+      t+=(go.length>9?"Pjesa "+(i/9+1)+": ":"")+mapsUrl(ch,last)+o+"\n"}}
+  return t}
+function shLinks(){var v=encodeURIComponent($("sh-t").value);$("sh-wa").href="https://wa.me/?text="+v;$("sh-vb").href="viber://forward?text="+v}
+function openShare(){$("sh-t").value=shareText();$("sh-s").textContent="";shLinks();$("shr").showModal()}
+$("sh-t").oninput=shLinks;
+$("sh-wa").onclick=shLinks;$("sh-vb").onclick=shLinks;
+$("sh-x").onclick=function(){$("shr").close()};
+$("sh-cp").onclick=function(){var ta=$("sh-t"),ok=function(){$("sh-s").textContent="U kopjua."},no=function(){ta.focus();ta.select();try{if(document.execCommand("copy")){ok();return}}catch(e){}$("sh-s").textContent="Shtyp gjatë tekstin, zgjidhe të gjithë dhe kopjoje."};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(ok,no)}else no()};
+$("sh-sh").onclick=function(){if(navigator.share){navigator.share({text:$("sh-t").value}).catch(function(){})}else $("sh-s").textContent="Shpërndarja nuk mbështetet këtu. Përdor WhatsApp, Viber ose Kopjo."};
+$("f-cancel").onclick=function(){$("dlg").close()};
+$("f-del").onclick=function(){if(armDel(this)){
+  db.places=db.places.filter(function(s){return s.id!==editId});for(var k in db.plans)db.plans[k]=db.plans[k].filter(function(i){return i!==editId});save();$("dlg").close();render()}};
+$("f-save").onclick=function(){
+  var name=$("f-name").value.trim();if(!name){$("f-name").focus();return}
+  var o={name:name,addr:$("f-addr").value.trim(),tel:$("f-tel").value.trim(),note:$("f-note").value.trim(),lat:pLat,lng:pLng};
+  if(editId){var s=byId(editId);for(var k in o)s[k]=o[k]}
+  else{o.id=newId();db.places.push(o);if(addAfter)dayIds().push(o.id)}
+  save();$("dlg").close();render();
+};
+var SH=null,ready=true,lastP={},lastD={};
+function newId(){return Date.now()*1000+Math.floor(Math.random()*1000)}
+function setSync(t,ok,bad){var e=$("sync");e.textContent=t;e.className="hint"+(ok?" okk":"")+(bad?" bad":"")}
+function fail(e){setSync("⚠ Nuk u ruajt në databazë ("+((e&&(e.code||e.message))||"gabim")+")"+(e&&e.code==="invalid_argument"?": ndoshta nuk ke leje për ndryshime (roli Contributor).":"."),0,1)}
+function syncOut(){
+  if(!SH||!ready)return;
+  db.places.forEach(function(p){var j=JSON.stringify(p);if(lastP[p.id]!==j){lastP[p.id]=j;SH.doc("places/"+p.id).set(JSON.parse(j)).catch(fail)}});
+  Object.keys(lastP).forEach(function(id){if(!db.places.some(function(p){return String(p.id)===id})){delete lastP[id];SH.doc("places/"+id).delete().catch(fail)}});
+  var ks={};Object.keys(db.plans).forEach(function(k){ks[k]=1});Object.keys(db.done).forEach(function(k){ks[k]=1});
+  Object.keys(ks).forEach(function(k){var d={ids:db.plans[k]||[],done:db.done[k]||{}},j=JSON.stringify(d);if(lastD[k]!==j){lastD[k]=j;SH.doc("days/"+k).set(d).catch(fail)}});
+}
+function initShared(){
+  if(!window.claude||!claude.use){setSync("Modaliteti lokal (vetëm ky pajisje)");return}
+  claude.use("db").then(function(d){
+    if(!d){setSync("Modaliteti lokal (vetëm ky pajisje). Hap linkun duke qenë i kyçur në Claude për sinkronizim.");return}
+    SH=d;ready=false;setSync("Po lidhem me databazën…");
+    var local=JSON.parse(JSON.stringify(db)),gp=false,gd=false;
+    function chk(){if(!(gp&&gd)||ready)return;ready=true;
+      var imp=false;try{imp=!!localStorage.getItem("dergesat_imp")}catch(e){}
+      if(!db.places.length&&!Object.keys(db.plans).length&&local.places&&local.places.length&&!imp){
+        db.places=local.places;db.plans=local.plans||{};db.done=local.done||{};
+        try{localStorage.setItem("dergesat_imp","1")}catch(e){}save()}
+      setSync("● Sinkronizuar me të gjithë përdoruesit",true);render()}
+    d.collection("places").onSnapshot(function(sn){
+      var arr=[];lastP={};
+      sn.docs.forEach(function(x){var v=x.data();if(v){var c=JSON.parse(JSON.stringify(v));arr.push(c);lastP[x.id]=JSON.stringify(c)}});
+      db.places=arr;if(!(sn.metadata&&sn.metadata.fromCache))gp=true;if(ready)render();else chk()
+    },function(){setSync("Gabim në sinkronizim.")});
+    d.collection("days").onSnapshot(function(sn){
+      db.plans={};db.done={};lastD={};
+      sn.docs.forEach(function(x){var v=JSON.parse(JSON.stringify(x.data()||{}));db.plans[x.id]=v.ids||[];db.done[x.id]=v.done||{};lastD[x.id]=JSON.stringify({ids:db.plans[x.id],done:db.done[x.id]})});
+      if(!(sn.metadata&&sn.metadata.fromCache))gd=true;if(ready)render();else chk()
+    },function(){setSync("Gabim në sinkronizim.")});
+  }).catch(function(){setSync("Modaliteti lokal (vetëm ky pajisje)")});
+}
+
+/* Supabase shim: i jep app-it të njëjtin interface "db" që kishte në Claude */
+(function(){
+  var URL_='https://kxesbwziuzyjoyobpgvw.supabase.co/rest/v1/kv';
+  var H={apikey:'sb_publishable_WgVdMUOR7N9FgJJwz54VtA_4UAPrLuW','Content-Type':'application/json'};
+  var pending=0,ver=0;
+  function chk(r){if(!r.ok)return r.text().then(function(t){var e=new Error(r.status+" "+t.slice(0,80));e.code=r.status;throw e});return r}
+  function w(p){pending++;ver++;return p.then(function(r){pending--;ver++;return r},function(e){pending--;ver++;throw e})}
+  var polls=[];
+  function pollAll(){polls.forEach(function(f){f()})}
+  function mk(){return{
+    doc:function(path){var a=path.split("/"),c=a[0],id=a[1];return{
+      set:function(obj){return w(fetch(URL_+'?on_conflict=collection,id',{method:'POST',headers:Object.assign({Prefer:'resolution=merge-duplicates'},H),body:JSON.stringify({collection:c,id:id,data:obj,updated_at:new Date().toISOString()})}).then(chk))},
+      delete:function(){return w(fetch(URL_+'?collection=eq.'+encodeURIComponent(c)+'&id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:H}).then(chk))}}},
+    collection:function(c){return{onSnapshot:function(cb,errcb){
+      var last=null;
+      function poll(){
+        if(document.hidden&&last!==null)return;
+        var v=ver;
+        fetch(URL_+'?collection=eq.'+encodeURIComponent(c)+'&select=id,data',{headers:H}).then(chk).then(function(r){return r.json()}).then(function(rows){
+          if(pending>0||v!==ver)return;
+          var j=JSON.stringify(rows);if(j===last)return;last=j;
+          cb({metadata:{fromCache:false},docs:rows.map(function(x){return{id:x.id,data:function(){return x.data}}})});
+        }).catch(function(){if(last===null&&errcb)errcb()});
+      }
+      polls.push(poll);poll();setInterval(poll,5000);
+      document.addEventListener("visibilitychange",function(){if(!document.hidden)poll()});
+      return function(){};
+    }}}
+  }}
+  window.claude={use:function(n){return Promise.resolve(n==="db"?mk():null)}};
+})();
+initShared();
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
