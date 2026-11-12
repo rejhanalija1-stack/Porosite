@@ -261,7 +261,7 @@ function initMap(){
   var items=forDay(),pts=[];
   items.forEach(function(s,i){if(s.lat!=null)pts.push({s:s,n:i+1})});
   var map=LM=L.map(el,{dragging:!L.Browser.mobile,tap:false,scrollWheelZoom:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   function icon(cls,t){return L.divIcon({className:'',html:'<div class="mk '+cls+'">'+t+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}
   var bounds=[[DEPOT.lat,DEPOT.lng]];
   L.marker([DEPOT.lat,DEPOT.lng],{icon:icon('dep','P')}).addTo(map).bindPopup('Prizren (nisja / kthimi)');
