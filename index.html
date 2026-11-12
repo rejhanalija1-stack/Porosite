@@ -68,6 +68,11 @@ input[type=search]{font-size:16px}
 select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}#op-b li{margin:5px 0}#op-b .big{font-size:18px;font-weight:700;margin:8px 0}
 .mv,.sug{display:none!important}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>#lmap{position:relative;z-index:0;height:300px;border-radius:12px;margin-top:6px;overflow:hidden;background:#e6ebe8}
+.mk{width:28px;height:28px;border-radius:50%;background:#12343b;color:#fff;font:700 14px/24px Barlow,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.mk.d{background:#2f8f5b}.mk.dep{background:#f2b705;color:#12343b}</style>
 </head>
 <body>
 <header>
@@ -245,19 +250,42 @@ function opt(st,pts){var rest=pts.slice(),p=[],c=st;
 function loc(s){return s.lat!=null?s.lat+','+s.lng:s.addr}
 function mapsUrl(ch){var wp=ch.slice(0,-1).map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+encodeURIComponent(loc(ch[ch.length-1]))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
 function mapSvg(items){
-  var P=[];items.forEach(function(s,i){if(s.lat!=null)P.push({s:s,n:i+1})});
-  if(!P.length)return '';
-  var W=340,H=230,pd=26,la=P.map(function(p){return p.s.lat}),ln=P.map(function(p){return p.s.lng}),
-  mnLa=Math.min.apply(null,la),mxLa=Math.max.apply(null,la),mnLn=Math.min.apply(null,ln),mxLn=Math.max.apply(null,ln),
-  cs=Math.cos((mnLa+mxLa)/2*Math.PI/180),dx=(mxLn-mnLn)*cs,dy=mxLa-mnLa,
-  k=Math.min((W-2*pd)/(dx||1e-6),(H-2*pd)/(dy||1e-6)),ox=(W-dx*k)/2,oy=(H-dy*k)/2;
-  if(!dx&&!dy){k=0}
-  var pt=P.map(function(p){return {x:ox+(p.s.lng-mnLn)*cs*k,y:oy+(mxLa-p.s.lat)*k,n:p.n,d:isDone(p.s.id)}});
-  var g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'
-   +'<polyline points="'+pt.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ')+'" style="fill:none;stroke:var(--acc);stroke-width:3;stroke-dasharray:6 5"/>';
-  pt.forEach(function(p){g+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="13" style="fill:'+(p.d?'var(--ok)':'var(--ink)')+'"/><text x="'+p.x.toFixed(1)+'" y="'+(p.y+5).toFixed(1)+'" text-anchor="middle" style="fill:var(--bg);font:700 14px Barlow,sans-serif">'+p.n+'</text>'});
-  g+='</svg>';
-  return '<div class="stop" style="display:block;border-left-color:var(--line)"><div class="t" style="font-weight:600">Harta e ndalesave</div>'+g+'<div class="hint">Pamje skematike: vetëm pozicionet dhe radha, pa rrugë. Për hartën e plotë shtyp “Hap rrugën në Maps”.</div></div>';
+  if(!items.some(function(s){return s.lat!=null}))return '';
+  return '<div class="stop" style="display:block;border-left-color:var(--line)"><div class="t" style="font-weight:600">Harta e ndalesave</div><div id="lmap"></div><div class="hint">● Prizreni (P) · numrat = radha · jeshile = të kryera. Zmadho me dy gishta. Për navigim shtyp “Hap rrugën në Maps”.</div></div>';
+}
+var LM=null,routeCache={};
+function initMap(){
+  if(LM){try{LM.remove()}catch(e){}LM=null}
+  var el=document.getElementById('lmap');if(!el)return;
+  if(typeof L==='undefined'){el.innerHTML='<div class="hint" style="padding:14px">Harta kërkon internet.</div>';return}
+  var items=forDay(),pts=[];
+  items.forEach(function(s,i){if(s.lat!=null)pts.push({s:s,n:i+1})});
+  var map=LM=L.map(el,{dragging:!L.Browser.mobile,tap:false,scrollWheelZoom:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+  function icon(cls,t){return L.divIcon({className:'',html:'<div class="mk '+cls+'">'+t+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}
+  var bounds=[[DEPOT.lat,DEPOT.lng]];
+  L.marker([DEPOT.lat,DEPOT.lng],{icon:icon('dep','P')}).addTo(map).bindPopup('Prizren (nisja / kthimi)');
+  var start=DEPOT;
+  pts.forEach(function(p){
+    var d=isDone(p.s.id);if(d)start=p.s;
+    L.marker([p.s.lat,p.s.lng],{icon:icon(d?'d':'',p.n)}).addTo(map).bindPopup('<b>'+esc(p.s.name)+'</b>'+(p.s.addr?'<br>'+esc(p.s.addr):''));
+    bounds.push([p.s.lat,p.s.lng]);
+  });
+  map.fitBounds(bounds,{padding:[26,26],maxZoom:15});
+  var rem=pts.filter(function(p){return !isDone(p.s.id)}).map(function(p){return p.s});
+  if(!rem.length)return;
+  var line=[start].concat(rem,[DEPOT]),key=line.map(function(s){return s.lat+','+s.lng}).join(';');
+  var sty={color:'#12343b',weight:4,opacity:.8};
+  function draw(ll,dash){L.polyline(ll,dash?Object.assign({dashArray:'6 6'},sty):sty).addTo(map)}
+  if(routeCache[key]){draw(routeCache[key]);return}
+  var straight=L.polyline(line.map(function(s){return [s.lat,s.lng]}),Object.assign({dashArray:'6 6'},sty)).addTo(map);
+  var url='https://router.project-osrm.org/route/v1/driving/'+line.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson';
+  fetch(url).then(function(r){return r.json()}).then(function(j){
+    if(!j.routes||!j.routes[0])return;
+    var ll=j.routes[0].geometry.coordinates.map(function(c){return [c[1],c[0]]});
+    routeCache[key]=ll;
+    if(LM===map){map.removeLayer(straight);draw(ll)}
+  }).catch(function(){});
 }
 var sugState=null;
 function suggest(btn){
@@ -368,7 +396,7 @@ function autoOrder(){
   var ord=done.concat(opt(st,pos,DEPOT),np).map(function(s){return s.id});
   if(ord.join()!==ids.join()){db.plans[k]=ord;save()}
 }
-var _render=render;render=function(){if(tab===1)autoOrder();_render()};
+var _render=render;render=function(){if(tab===1)autoOrder();_render();if(tab===1)setTimeout(initMap,0)};
 function readPos(t){t=(t||"").trim();if(!t)return null;var u=t;try{u=decodeURIComponent(t.replace(/\+/g," "))}catch(e){}
   var dm=u.match(/(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([NS])[,\s]+(\d+)°\s*(\d+)['′]\s*([\d.]+)["″]?\s*([EW])/i),dd=dm?[0,(dm[4].toUpperCase()=="S"?-1:1)*(+dm[1]+dm[2]/60+dm[3]/3600),(dm[8].toUpperCase()=="W"?-1:1)*(+dm[5]+dm[6]/60+dm[7]/3600)]:null;
   var m=dd||u.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||u.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||u.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/\/maps\/(?:place|search)\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||u.match(/^\s*(-?\d{1,3}\.\d+)\s*[,;]?\s*(-?\d{1,3}\.\d+)\s*$/);
