@@ -155,7 +155,7 @@ function render(){
     else{
       var todo=items.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
       if(items.length>1)h+='<button class="route sug" data-a="sug">Sugjero rrugën më të mirë</button>';
-      if(todo.length){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(todo.slice(0,9),todo.length<=9)+'">Hap rrugën në Maps'+(todo.length>9?' (9 të parat nga '+todo.length+')':' ('+todo.length+' ndalesa)')+'</a>'}
+      if(todo.length){var ps=routeParts(todo);ps.forEach(function(p,k){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(p.ch,p.back,p.origin)+'">'+(ps.length>1?'Rruga: pjesa '+(k+1)+' nga '+ps.length+' (ndalesat '+p.from+'–'+p.to+')':'Hap rrugën në Maps ('+todo.length+' ndalesa)')+'</a>'})}
       h+='<button class="route" data-a="share" style="width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer">Dërgo listën e ditës</button>';h+=mapSvg(items);
       h+='<div class="t" style="color:var(--mut);margin:4px 2px">'+nd+' nga '+items.length+' të kryera</div>';
       items.forEach(function(s,i){h+=card(s,i,true,i===0,i===items.length-1)});
@@ -328,7 +328,8 @@ function opt(st,pts,en){var rest=pts.slice(),p=[],c=st;
   var imp=true,best=plen(st,p,en);
   while(imp){imp=false;for(var i=0;i<p.length-1;i++)for(var j=i+1;j<p.length;j++){var q=p.slice(0,i).concat(p.slice(i,j+1).reverse(),p.slice(j+1)),l=plen(st,q,en);if(l<best-1e-6){p=q;best=l;imp=true}}}
   return p}
-function mapsUrl(ch,back){var all=back?ch:ch.slice(0,-1),dest=back?DEPOT:ch[ch.length-1],wp=all.map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+encodeURIComponent(loc(dest))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
+function mapsUrl(ch,back,origin){var all=back?ch:ch.slice(0,-1),dest=back?DEPOT:ch[ch.length-1],wp=all.map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving'+(origin?'&origin='+encodeURIComponent(origin):'')+'&destination='+encodeURIComponent(loc(dest))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
+function routeParts(go){var out=[],i=0;while(i<go.length){var rem=go.length-i,last=rem<=9,n=last?rem:10;out.push({ch:go.slice(i,i+n),back:last,origin:i?loc(go[i-1]):null,from:i+1,to:i+n});i+=n}return out}
 function suggest(btn){
   var rem=forDay().filter(function(s){return !isDone(s.id)}),pos=rem.filter(function(s){return s.lat!=null});
   if(!pos.length){$('op-b').innerHTML='<div class="big">Nuk ka çfarë të sugjerohet</div><div class="hint">Asnjë ndalesë e pakryer nuk ka pozicion nga Maps. Shto pozicionin te “Ndrysho”.</div>';$('op-ok').hidden=true;$('opt').showModal();return}
@@ -385,8 +386,7 @@ function shareText(){
   it.forEach(function(s,i){t+="\n"+(i+1)+". "+s.name+(isDone(s.id)?" ✓":"")+"\n";if(s.addr)t+="   "+s.addr+"\n";if(s.tel)t+="   📞 "+s.tel+"\n";if(s.note)t+="   ℹ️ "+s.note+"\n"});
   var go=it.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
   if(go.length){t+="\n🗺 Rruga në Maps (kthimi në Prizren në fund):\n";
-    for(var i=0;i<go.length;i+=9){var ch=go.slice(i,i+9),last=i+9>=go.length,o=i?"&origin="+encodeURIComponent(loc(go[i-1])):"";
-      t+=(go.length>9?"Pjesa "+(i/9+1)+": ":"")+mapsUrl(ch,last)+o+"\n"}}
+    var ps=routeParts(go);ps.forEach(function(p,k){t+=(ps.length>1?"Pjesa "+(k+1)+": ":"")+mapsUrl(p.ch,p.back,p.origin)+"\n"})}
   return t}
 function shLinks(){var v=encodeURIComponent($("sh-t").value);$("sh-wa").href="https://wa.me/?text="+v;$("sh-vb").href="viber://forward?text="+v}
 function openShare(){$("sh-t").value=shareText();$("sh-s").textContent="";shLinks();$("shr").showModal()}
@@ -479,4 +479,3 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
-
