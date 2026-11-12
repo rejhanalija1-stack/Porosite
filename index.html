@@ -155,7 +155,7 @@ function render(){
     else{
       var todo=items.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
       if(items.length>1)h+='<button class="route sug" data-a="sug">Sugjero rrugën më të mirë</button>';
-      if(todo.length){var ps=routeParts(todo);ps.forEach(function(p,k){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(p.ch,p.back,p.origin)+'">'+(ps.length>1?'Rruga: pjesa '+(k+1)+' nga '+ps.length+' (ndalesat '+p.from+'–'+p.to+')':'Hap rrugën në Maps ('+todo.length+' ndalesa)')+'</a>'})}
+      if(todo.length){var ps=routeParts(todo);ps.forEach(function(p,k){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(p.ch,p.back,p.origin)+'">'+(ps.length>1?'Rruga: pjesa '+(k+1)+' nga '+ps.length+' (ndalesat '+p.from+'–'+p.to+(p.back?' + Prizren':'')+')':'Hap rrugën në Maps ('+todo.length+' ndalesa + kthimi në Prizren)')+'</a>'})}
       h+='<button class="route" data-a="share" style="width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer">Dërgo listën e ditës</button>';h+=mapSvg(items);
       h+='<div class="t" style="color:var(--mut);margin:4px 2px">'+nd+' nga '+items.length+' të kryera</div>';
       items.forEach(function(s,i){h+=card(s,i,true,i===0,i===items.length-1)});
@@ -329,7 +329,7 @@ function opt(st,pts,en){var rest=pts.slice(),p=[],c=st;
   while(imp){imp=false;for(var i=0;i<p.length-1;i++)for(var j=i+1;j<p.length;j++){var q=p.slice(0,i).concat(p.slice(i,j+1).reverse(),p.slice(j+1)),l=plen(st,q,en);if(l<best-1e-6){p=q;best=l;imp=true}}}
   return p}
 function mapsUrl(ch,back,origin){var all=back?ch:ch.slice(0,-1),dest=back?DEPOT:ch[ch.length-1],wp=all.map(loc).join('|');return 'https://www.google.com/maps/dir/?api=1&travelmode=driving'+(origin?'&origin='+encodeURIComponent(origin):'')+'&destination='+encodeURIComponent(loc(dest))+(wp?'&waypoints='+encodeURIComponent(wp):'')}
-function routeParts(go){var out=[],i=0;while(i<go.length){var rem=go.length-i,last=rem<=9,n=last?rem:10;out.push({ch:go.slice(i,i+n),back:last,origin:i?loc(go[i-1]):null,from:i+1,to:i+n});i+=n}return out}
+function routeParts(go){var out=[],i=0;while(i<go.length){var rem=go.length-i,last=rem<=8,n=last?rem:(rem===9?8:9);out.push({ch:go.slice(i,i+n),back:last,origin:i?loc(go[i-1]):null,from:i+1,to:i+n});i+=n}return out}
 function suggest(btn){
   var rem=forDay().filter(function(s){return !isDone(s.id)}),pos=rem.filter(function(s){return s.lat!=null});
   if(!pos.length){$('op-b').innerHTML='<div class="big">Nuk ka çfarë të sugjerohet</div><div class="hint">Asnjë ndalesë e pakryer nuk ka pozicion nga Maps. Shto pozicionin te “Ndrysho”.</div>';$('op-ok').hidden=true;$('opt').showModal();return}
