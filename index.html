@@ -154,7 +154,7 @@ function render(){
     if(!items.length)h='<div class="empty">Asnjë dërgesë për këtë ditë.<br>Shtyp “+ Shto në ditë” dhe zgjidh nga vendet e ruajtura.</div>';
     else{
       var todo=items.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
-      if(items.length>1)h+='<button class="route sug" data-a="sug">Sugjero rrugën më të mirë</button>';
+      
       if(todo.length){var ps=routeParts(todo);ps.forEach(function(p,k){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(p.ch,p.back,p.origin)+'">'+(ps.length>1?'Rruga: pjesa '+(k+1)+' nga '+ps.length+' (ndalesat '+p.from+'–'+p.to+(p.back?' + Prizren':'')+')':'Hap rrugën në Maps ('+todo.length+' ndalesa + kthimi në Prizren)')+'</a>'})}
       h+='<button class="route" data-a="share" style="width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer">Dërgo listën e ditës</button>';h+=mapSvg(items);
       h+='<div class="t" style="color:var(--mut);margin:4px 2px">'+nd+' nga '+items.length+' të kryera</div>';
