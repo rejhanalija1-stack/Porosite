@@ -75,6 +75,7 @@ select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;b
 .mk{width:28px;height:28px;border-radius:50%;background:#12343b;color:#fff;font:700 14px/24px Barlow,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .mk.d{background:#2f8f5b}.mk.dep{background:#f2b705;color:#12343b}</style>
 <style>#sync::before{content:"";display:inline-block;width:18px;height:18px;margin-right:7px;vertical-align:-4px;background:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjMTIzNDNiIi8+PHBhdGggZD0iTTI2IDc4QzM2IDgwIDQ2IDgwIDUwIDcxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuOCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMyA0Ii8+PGNpcmNsZSBjeD0iMjYiIGN5PSI3OCIgcj0iMy42IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTciIGZpbGw9IiNmMmI3MDUiLz48cGF0aCBkPSJNMzYgNDkuNkw1MCA3MEw2NCA0OS42WiIgZmlsbD0iI2YyYjcwNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjciIGZpbGw9IiMxMjM0M2IiLz48L3N2Zz4=) center/contain no-repeat}</style>
+<style>body.driver .tabs,body.driver #add,body.driver [data-a="edit"],body.driver [data-a="rm"],body.driver .mv{display:none!important}</style>
 </head>
 <body>
 <header>
@@ -478,18 +479,27 @@ function initShared(){
   var H={apikey:'sb_publishable_WgVdMUOR7N9FgJJwz54VtA_4UAPrLuW','Content-Type':'application/json'};
   var LIC='',pending=0,ver=0;
   function chk(r){if(!r.ok)return r.text().then(function(t){var e=new Error(r.status+" "+t.slice(0,80));e.code=r.status;throw e});return r}
+  function res(r){return r.json().then(function(o){
+    if(o&&o.ok===false){
+      var e=new Error(o.err==='perm'?'Nuk ke leje për këtë veprim.':(o.err==='locked'?'Qasja është bllokuar përkohësisht.':String(o.err)));
+      e.code=o.err==='license'?403:(o.err==='locked'?423:400);
+      if(o.err==='license'&&window.__revoked)window.__revoked();
+      throw e;
+    }
+    return o})}
   function rpc(fn,body){return fetch(BASE+fn,{method:'POST',headers:H,body:JSON.stringify(body)}).then(chk)}
   function w(p){pending++;ver++;return p.then(function(r){pending--;ver++;return r},function(e){pending--;ver++;throw e})}
   function mk(){return{
     doc:function(path){var a=path.split("/"),c=a[0],id=a[1];return{
-      set:function(obj){return w(rpc('kv_set',{lic:LIC,coll:c,kid:id,d:obj}))},
-      delete:function(){return w(rpc('kv_del',{lic:LIC,coll:c,kid:id}))}}},
+      set:function(obj){return w(rpc('kv_set',{lic:LIC,coll:c,kid:id,d:obj}).then(res))},
+      delete:function(){return w(rpc('kv_del',{lic:LIC,coll:c,kid:id}).then(res))}}},
     collection:function(c){return{onSnapshot:function(cb,errcb){
       var last=null;
       function poll(){
         if(document.hidden&&last!==null)return;
         var v=ver;
-        rpc('kv_list',{lic:LIC,coll:c}).then(function(r){return r.json()}).then(function(rows){
+        rpc('kv_list',{lic:LIC,coll:c}).then(res).then(function(o){
+          var rows=o.rows||[];
           if(pending>0||v!==ver)return;
           var j=JSON.stringify(rows);if(j===last)return;last=j;
           cb({metadata:{fromCache:false},docs:rows.map(function(x){return{id:x.id,data:function(){return x.data}}})});
@@ -504,10 +514,11 @@ function initShared(){
     }}}
   }}
   window.__setLic=function(c){LIC=c};
-  window.__check=function(c){return rpc('is_licensed',{lic:c}).then(function(r){return r.json()})};
+  window.__check=function(c){return rpc('login',{lic:c}).then(function(r){return r.json()})};
   window.claude={use:function(n){return Promise.resolve(n==="db"?mk():null)}};
 })();
-var LK="lic_code";
+var LK="lic_code",RK="lic_role";
+function applyRole(r){try{localStorage.setItem(RK,r||"driver")}catch(e){}document.body.classList.toggle("driver",r!=="admin")}
 function startApp(){initShared();render()}
 function showGate(msg){
   var g=document.getElementById("gate");
@@ -519,10 +530,10 @@ function showGate(msg){
       var c=document.getElementById("gcode").value.trim();
       if(!c)return;
       document.getElementById("gmsg").textContent="Po kontrolloj…";
-      __check(c).then(function(ok){
-        if(!ok){document.getElementById("gmsg").textContent="Kodi nuk është i saktë.";return}
+      __check(c).then(function(o){
+        if(!o.ok){document.getElementById("gmsg").textContent=o.err==="locked"?"Shumë tentativa të gabuara. Qasja u bllokua përkohësisht, provo më vonë.":"Kodi nuk është i saktë.";return}
         try{localStorage.setItem(LK,c)}catch(e){}
-        __setLic(c);g.remove();startApp();
+        applyRole(o.role);__setLic(c);g.remove();startApp();
       }).catch(function(){document.getElementById("gmsg").textContent="Nuk ka internet. Provo përsëri."});
     };
     document.getElementById("gbtn").onclick=go;
@@ -535,9 +546,11 @@ window.__revoked=function(){try{localStorage.removeItem(LK)}catch(e){}location.r
   var c="";try{c=localStorage.getItem(LK)||""}catch(e){}
   if(!c){showGate();return}
   __setLic(c);
-  __check(c).then(function(ok){
-    if(ok)startApp();else{try{localStorage.removeItem(LK)}catch(e){}showGate("Kodi nuk është më i vlefshëm.")}
-  }).catch(function(){startApp()});
+  __check(c).then(function(o){
+    if(o.ok){applyRole(o.role);startApp()}
+    else if(o.err==="locked"){showGate("Qasja është bllokuar përkohësisht. Provo më vonë.")}
+    else{try{localStorage.removeItem(LK)}catch(e){}showGate("Kodi nuk është më i vlefshëm.")}
+  }).catch(function(){var r="driver";try{r=localStorage.getItem(RK)||"driver"}catch(e){}applyRole(r);startApp()});
 })();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
