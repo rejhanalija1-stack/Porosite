@@ -76,6 +76,7 @@ select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;b
 .mk.d{background:#2f8f5b}.mk.dep{background:#f2b705;color:#12343b}</style>
 <style>#sync::before{content:"";display:inline-block;width:18px;height:18px;margin-right:7px;vertical-align:-4px;background:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjMTIzNDNiIi8+PHBhdGggZD0iTTI2IDc4QzM2IDgwIDQ2IDgwIDUwIDcxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuOCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMyA0Ii8+PGNpcmNsZSBjeD0iMjYiIGN5PSI3OCIgcj0iMy42IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTciIGZpbGw9IiNmMmI3MDUiLz48cGF0aCBkPSJNMzYgNDkuNkw1MCA3MEw2NCA0OS42WiIgZmlsbD0iI2YyYjcwNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjciIGZpbGw9IiMxMjM0M2IiLz48L3N2Zz4=) center/contain no-repeat}</style>
 <style>body.driver .tabs,body.driver #add,body.driver [data-a="edit"],body.driver [data-a="rm"],body.driver .mv{display:none!important}</style>
+<style>body.mgr #f-del{display:none!important}</style>
 </head>
 <body>
 <header>
@@ -520,7 +521,7 @@ function initShared(){
 })();
 var LK="lic_code",RK="lic_role";
 document.getElementById("dil").onclick=function(){if(!confirm("Të dalësh nga licenca? Do të të duhet kodi përsëri për të hyrë."))return;try{localStorage.removeItem("lic_code");localStorage.removeItem("lic_role")}catch(e){}location.reload()};
-function applyRole(r){try{localStorage.setItem(RK,r||"driver")}catch(e){}document.body.classList.toggle("driver",r!=="admin")}
+function applyRole(r){try{localStorage.setItem(RK,r||"driver")}catch(e){}document.body.classList.toggle("driver",r!=="admin"&&r!=="manager");document.body.classList.toggle("mgr",r==="manager")}
 function startApp(){initShared();render()}
 function showGate(msg){
   var g=document.getElementById("gate");
