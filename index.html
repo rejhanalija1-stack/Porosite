@@ -511,10 +511,10 @@ function showGate(msg){
   var g=document.getElementById("gate");
   if(!g){g=document.createElement("div");g.id="gate";
     g.style.cssText="position:fixed;inset:0;z-index:99999;background:#12343b;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,system-ui,sans-serif";
-    g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
+    g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
     document.body.appendChild(g);
     var go=function(){
-      var c=document.getElementById("gcode").value.trim().toUpperCase();
+      var c=document.getElementById("gcode").value.trim();
       if(!c)return;
       document.getElementById("gmsg").textContent="Po kontrolloj…";
       __check(c).then(function(ok){
