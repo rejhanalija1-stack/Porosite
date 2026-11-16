@@ -77,6 +77,45 @@ select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;b
 <style>#sync::before{content:"";display:inline-block;width:18px;height:18px;margin-right:7px;vertical-align:-4px;background:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjMTIzNDNiIi8+PHBhdGggZD0iTTI2IDc4QzM2IDgwIDQ2IDgwIDUwIDcxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuOCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMyA0Ii8+PGNpcmNsZSBjeD0iMjYiIGN5PSI3OCIgcj0iMy42IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTciIGZpbGw9IiNmMmI3MDUiLz48cGF0aCBkPSJNMzYgNDkuNkw1MCA3MEw2NCA0OS42WiIgZmlsbD0iI2YyYjcwNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjciIGZpbGw9IiMxMjM0M2IiLz48L3N2Zz4=) center/contain no-repeat}</style>
 <style>body.driver .tabs,body.driver #add,body.driver [data-a="edit"],body.driver [data-a="rm"],body.driver .mv{display:none!important}</style>
 <style>body.mgr #f-del{display:none!important}</style>
+<style id="skin">
+/* Pamja e re: header i errët, karta të buta, butona të qartë */
+header{background:linear-gradient(160deg,#1d4a53 0%,#12343b 60%,#0b262c 100%);color:#fff;border-radius:0 0 24px 24px;padding:14px 14px 12px;box-shadow:0 8px 24px rgba(11,38,44,.28)}
+.dn h1{color:#fff;font-size:27px;letter-spacing:.2px}
+.dn h1 small{color:#ffd24a;text-transform:uppercase;letter-spacing:1px;font-size:12px;font-weight:600;margin-top:2px}
+.ic{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:14px}
+.bar{height:8px;background:rgba(255,255,255,.18);border-radius:4px;margin:12px 0 4px}
+.bar i{background:linear-gradient(90deg,#4cc58a,#8ae8b4);border-radius:4px}
+header .hint{color:rgba(255,255,255,.72)}
+header .hint.okk{color:#8ae8b4}
+header .hint.bad{color:#ffb4a8}
+.tabs{background:rgba(255,255,255,.1);padding:4px;border-radius:16px;margin-top:10px}
+.tabs button{color:rgba(255,255,255,.75);border-radius:12px;padding:10px}
+.tabs button.on{background:linear-gradient(135deg,#ffd24a,#f2b705);color:#12343b}
+main{padding:14px 14px 6px}
+.stop{border-radius:18px;border-left-width:5px;padding:14px;margin:12px 0;box-shadow:0 1px 2px rgba(18,52,59,.06),0 8px 20px rgba(18,52,59,.07)}
+.n{width:34px;height:34px;background:linear-gradient(135deg,#ffd24a,#f2b705);color:#12343b;font-size:16px;box-shadow:0 2px 6px rgba(242,183,5,.4)}
+.stop.done .n{background:linear-gradient(135deg,#4cc58a,#2f8f5b);color:#fff;box-shadow:none}
+.nm{font-size:20px;line-height:1.15}
+.ad{margin-top:2px}
+.act{gap:8px;margin-top:12px}
+.act a,.act button{min-height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--card)}
+.act .go{background:linear-gradient(135deg,#ffd24a,#f2b705);border-color:transparent;box-shadow:0 2px 8px rgba(242,183,5,.35)}
+.act a.go::before{content:"\27A4\00A0";font-size:.85em}
+.act .ok{background:linear-gradient(135deg,#4cc58a,#2f8f5b);border-color:transparent;box-shadow:0 2px 8px rgba(47,143,91,.3)}
+.fab{height:58px;padding:0 26px;background:linear-gradient(135deg,#ffd24a,#f2b705);box-shadow:0 10px 26px rgba(242,183,5,.45),0 2px 6px rgba(0,0,0,.2)}
+.route{background:linear-gradient(135deg,#1d4a53,#12343b);color:#fff;border-radius:16px;padding:15px;box-shadow:0 6px 18px rgba(11,38,44,.3);border:1px solid rgba(255,255,255,.08)}
+.route::after{content:"\00A0\2192"}
+#lmap{height:240px;border-radius:16px;box-shadow:0 2px 10px rgba(18,52,59,.18)}
+dialog{border-radius:24px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.4)}
+dialog::backdrop{background:rgba(8,24,28,.55);backdrop-filter:blur(3px)}
+input,textarea,select{border-radius:12px;padding:12px}
+input:focus,textarea:focus,select:focus{outline:2px solid #f2b705;outline-offset:0}
+.fr button,.seg button,.days button{border-radius:14px}
+.fr .sv{background:linear-gradient(135deg,#1d4a53,#12343b);color:#fff;border-color:transparent}
+.mapbtn{border-radius:12px}
+.empty{padding:56px 14px;font-size:17px}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .stop{box-shadow:0 1px 2px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.25)}}
+</style>
 </head>
 <body>
 <header>
@@ -526,7 +565,7 @@ function startApp(){initShared();render()}
 function showGate(msg){
   var g=document.getElementById("gate");
   if(!g){g=document.createElement("div");g.id="gate";
-    g.style.cssText="position:fixed;inset:0;z-index:99999;background:#12343b;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,system-ui,sans-serif";
+    g.style.cssText="position:fixed;inset:0;z-index:99999;background:radial-gradient(120% 80% at 50% 0%,#1d4a53 0%,#12343b 55%,#0b262c 100%);color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,system-ui,sans-serif";
     g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="width:96px;height:96px;margin:0 auto 18px;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#12343b"/><path d="M26 78C36 80 46 80 50 71" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="3 4"/><circle cx="26" cy="78" r="3.6" fill="#fff"/><circle cx="50" cy="40" r="17" fill="#f2b705"/><path d="M36 49.6L50 70L64 49.6Z" fill="#f2b705"/><circle cx="50" cy="40" r="7" fill="#12343b"/></svg></div><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
     document.body.appendChild(g);
     var go=function(){
