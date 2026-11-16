@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#12343b">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Dërgesat e ditës</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap">
@@ -73,6 +74,7 @@ select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;b
 <style>#lmap{position:relative;z-index:0;height:300px;border-radius:12px;margin-top:6px;overflow:hidden;background:#e6ebe8}
 .mk{width:28px;height:28px;border-radius:50%;background:#12343b;color:#fff;font:700 14px/24px Barlow,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .mk.d{background:#2f8f5b}.mk.dep{background:#f2b705;color:#12343b}</style>
+<style>#sync::before{content:"";display:inline-block;width:18px;height:18px;margin-right:7px;vertical-align:-4px;background:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjMTIzNDNiIi8+PHBhdGggZD0iTTI2IDc4QzM2IDgwIDQ2IDgwIDUwIDcxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuOCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMyA0Ii8+PGNpcmNsZSBjeD0iMjYiIGN5PSI3OCIgcj0iMy42IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTciIGZpbGw9IiNmMmI3MDUiLz48cGF0aCBkPSJNMzYgNDkuNkw1MCA3MEw2NCA0OS42WiIgZmlsbD0iI2YyYjcwNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjciIGZpbGw9IiMxMjM0M2IiLz48L3N2Zz4=) center/contain no-repeat}</style>
 </head>
 <body>
 <header>
@@ -511,7 +513,7 @@ function showGate(msg){
   var g=document.getElementById("gate");
   if(!g){g=document.createElement("div");g.id="gate";
     g.style.cssText="position:fixed;inset:0;z-index:99999;background:#12343b;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,system-ui,sans-serif";
-    g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
+    g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="width:96px;height:96px;margin:0 auto 18px;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#12343b"/><path d="M26 78C36 80 46 80 50 71" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="3 4"/><circle cx="26" cy="78" r="3.6" fill="#fff"/><circle cx="50" cy="40" r="17" fill="#f2b705"/><path d="M36 49.6L50 70L64 49.6Z" fill="#f2b705"/><circle cx="50" cy="40" r="7" fill="#12343b"/></svg></div><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
     document.body.appendChild(g);
     var go=function(){
       var c=document.getElementById("gcode").value.trim();
