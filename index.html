@@ -470,39 +470,73 @@ function initShared(){
   }).catch(function(){setSync("Modaliteti lokal (vetëm ky pajisje)")});
 }
 
-/* Supabase shim: i jep app-it të njëjtin interface "db" që kishte në Claude */
+/* Supabase shim (me licencë): çdo kërkesë kalon nga funksione që kontrollojnë kodin */
 (function(){
-  var URL_='https://kxesbwziuzyjoyobpgvw.supabase.co/rest/v1/kv';
+  var BASE='https://kxesbwziuzyjoyobpgvw.supabase.co/rest/v1/rpc/';
   var H={apikey:'sb_publishable_WgVdMUOR7N9FgJJwz54VtA_4UAPrLuW','Content-Type':'application/json'};
-  var pending=0,ver=0;
+  var LIC='',pending=0,ver=0;
   function chk(r){if(!r.ok)return r.text().then(function(t){var e=new Error(r.status+" "+t.slice(0,80));e.code=r.status;throw e});return r}
+  function rpc(fn,body){return fetch(BASE+fn,{method:'POST',headers:H,body:JSON.stringify(body)}).then(chk)}
   function w(p){pending++;ver++;return p.then(function(r){pending--;ver++;return r},function(e){pending--;ver++;throw e})}
-  var polls=[];
-  function pollAll(){polls.forEach(function(f){f()})}
   function mk(){return{
     doc:function(path){var a=path.split("/"),c=a[0],id=a[1];return{
-      set:function(obj){return w(fetch(URL_+'?on_conflict=collection,id',{method:'POST',headers:Object.assign({Prefer:'resolution=merge-duplicates'},H),body:JSON.stringify({collection:c,id:id,data:obj,updated_at:new Date().toISOString()})}).then(chk))},
-      delete:function(){return w(fetch(URL_+'?collection=eq.'+encodeURIComponent(c)+'&id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:H}).then(chk))}}},
+      set:function(obj){return w(rpc('kv_set',{lic:LIC,coll:c,kid:id,d:obj}))},
+      delete:function(){return w(rpc('kv_del',{lic:LIC,coll:c,kid:id}))}}},
     collection:function(c){return{onSnapshot:function(cb,errcb){
       var last=null;
       function poll(){
         if(document.hidden&&last!==null)return;
         var v=ver;
-        fetch(URL_+'?collection=eq.'+encodeURIComponent(c)+'&select=id,data',{headers:H}).then(chk).then(function(r){return r.json()}).then(function(rows){
+        rpc('kv_list',{lic:LIC,coll:c}).then(function(r){return r.json()}).then(function(rows){
           if(pending>0||v!==ver)return;
           var j=JSON.stringify(rows);if(j===last)return;last=j;
           cb({metadata:{fromCache:false},docs:rows.map(function(x){return{id:x.id,data:function(){return x.data}}})});
-        }).catch(function(){if(last===null&&errcb)errcb()});
+        }).catch(function(e){
+          if(e&&(e.code===401||e.code===403)){if(window.__revoked)window.__revoked();return}
+          if(last===null&&errcb)errcb();
+        });
       }
-      polls.push(poll);poll();setInterval(poll,5000);
+      poll();setInterval(poll,5000);
       document.addEventListener("visibilitychange",function(){if(!document.hidden)poll()});
       return function(){};
     }}}
   }}
+  window.__setLic=function(c){LIC=c};
+  window.__check=function(c){return rpc('is_licensed',{lic:c}).then(function(r){return r.json()})};
   window.claude={use:function(n){return Promise.resolve(n==="db"?mk():null)}};
 })();
-initShared();
-render();
+var LK="lic_code";
+function startApp(){initShared();render()}
+function showGate(msg){
+  var g=document.getElementById("gate");
+  if(!g){g=document.createElement("div");g.id="gate";
+    g.style.cssText="position:fixed;inset:0;z-index:99999;background:#12343b;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,system-ui,sans-serif";
+    g.innerHTML='<div style="width:100%;max-width:340px;text-align:center"><div style="font-size:30px;font-weight:700;margin-bottom:6px">Dërgesat e ditës</div><div style="opacity:.75;margin-bottom:22px">Shkruaj kodin e licencës. Kërkohet vetëm herën e parë.</div><input id="gcode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" style="width:100%;padding:14px;border-radius:12px;border:0;font-size:18px;text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px"><button id="gbtn" style="width:100%;padding:14px;border-radius:12px;border:0;background:#f2b705;color:#12343b;font-size:18px;font-weight:700">Hap</button><div id="gmsg" style="margin-top:14px;min-height:22px;color:#ffb4a8"></div></div>';
+    document.body.appendChild(g);
+    var go=function(){
+      var c=document.getElementById("gcode").value.trim().toUpperCase();
+      if(!c)return;
+      document.getElementById("gmsg").textContent="Po kontrolloj…";
+      __check(c).then(function(ok){
+        if(!ok){document.getElementById("gmsg").textContent="Kodi nuk është i saktë.";return}
+        try{localStorage.setItem(LK,c)}catch(e){}
+        __setLic(c);g.remove();startApp();
+      }).catch(function(){document.getElementById("gmsg").textContent="Nuk ka internet. Provo përsëri."});
+    };
+    document.getElementById("gbtn").onclick=go;
+    document.getElementById("gcode").onkeydown=function(e){if(e.key==="Enter")go()};
+  }
+  if(msg)document.getElementById("gmsg").textContent=msg;
+}
+window.__revoked=function(){try{localStorage.removeItem(LK)}catch(e){}location.reload()};
+(function(){
+  var c="";try{c=localStorage.getItem(LK)||""}catch(e){}
+  if(!c){showGate();return}
+  __setLic(c);
+  __check(c).then(function(ok){
+    if(ok)startApp();else{try{localStorage.removeItem(LK)}catch(e){}showGate("Kodi nuk është më i vlefshëm.")}
+  }).catch(function(){startApp()});
+})();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
