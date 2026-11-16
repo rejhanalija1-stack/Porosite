@@ -89,6 +89,7 @@ select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;b
   <div class="tabs"><button id="t1" class="on">Dita</button><button id="t2">Vendet</button></div>
 </header>
 <main id="list"></main>
+<div style="text-align:center;padding:4px 0 120px"><button id="dil" style="background:transparent;color:inherit;opacity:.7;border:1px solid var(--line);border-radius:999px;padding:8px 22px;font:inherit;font-size:15px">Dil</button></div>
 <button class="fab" id="add">+ Shto në ditë</button>
 
 <dialog id="pick">
@@ -518,6 +519,7 @@ function initShared(){
   window.claude={use:function(n){return Promise.resolve(n==="db"?mk():null)}};
 })();
 var LK="lic_code",RK="lic_role";
+document.getElementById("dil").onclick=function(){if(!confirm("Të dalësh nga licenca? Do të të duhet kodi përsëri për të hyrë."))return;try{localStorage.removeItem("lic_code");localStorage.removeItem("lic_role")}catch(e){}location.reload()};
 function applyRole(r){try{localStorage.setItem(RK,r||"driver")}catch(e){}document.body.classList.toggle("driver",r!=="admin")}
 function startApp(){initShared();render()}
 function showGate(msg){
