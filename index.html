@@ -114,7 +114,16 @@ input:focus,textarea:focus,select:focus{outline:2px solid #f2b705;outline-offset
 .fr .sv{background:linear-gradient(135deg,#1d4a53,#12343b);color:#fff;border-color:transparent}
 .mapbtn{border-radius:12px}
 .empty{padding:56px 14px;font-size:17px}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .stop{box-shadow:0 1px 2px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.25)}}
+.pay-tag{font-weight:700;border-color:rgba(242,183,5,.6);color:var(--ink);background:rgba(242,183,5,.15)}
+.pay-tag.paid{border-color:rgba(47,143,91,.5);color:var(--ok);background:rgba(47,143,91,.12)}
+.act .paybtn.paid{background:rgba(47,143,91,.14);color:var(--ok);border-color:rgba(47,143,91,.45)}
+.route.sec{width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 2px 8px rgba(18,52,59,.08);cursor:pointer}
+.route.sec::after{content:""}
+.pay-sum{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0 4px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
+.pay-sum strong{color:var(--ok)}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#12343b;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#toast.on{opacity:1}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .stop{box-shadow:0 1px 2px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.25)}:root:not([data-theme="light"]) .pay-tag{color:#ffd24a}}
 </style>
 </head>
 <body>
@@ -139,6 +148,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid #f2b705;outline-offset
   <div style="border-top:1px solid var(--line);padding-top:8px">
     <div class="t" style="font-weight:700;font-size:18px">Vend vetëm për këtë ditë</div>
     <input id="tp-n" placeholder="Emri (opsionale)" autocomplete="off" style="margin-top:6px">
+    <input id="tp-a" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Shuma € (opsionale)" autocomplete="off" style="margin-top:6px">
     <div class="row" style="margin-top:6px"><input id="tp-l" placeholder="Ngjit linkun ose koordinatat" autocomplete="off"><a class="mapbtn" id="tp-m" target="_blank" rel="noopener" href="https://www.google.com/maps" style="display:grid;place-items:center;text-decoration:none">Hap Maps</a></div>
     <div class="hint" id="tp-s"></div>
     <button type="button" class="mapbtn" id="tp-ok" style="width:100%;margin-top:6px;height:44px">Shto vetëm sot</button>
@@ -167,28 +177,52 @@ input:focus,textarea:focus,select:focus{outline:2px solid #f2b705;outline-offset
   <div class="hint" id="f-st"></div>
   <button type="button" id="f-gps" class="mapbtn" style="width:100%;margin-top:8px;height:44px">Ruaj pozicionin tim aktual (jam këtu)</button>
   <label>Telefoni</label><input id="f-tel" type="tel">
+  <label>Shuma standarde (€, opsionale)</label><input id="f-amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="p.sh. 25.00">
   <label>Shënim (kodi i portës, kati, orari…)</label><textarea id="f-note" rows="2"></textarea>
   <div class="fr"><button class="del" id="f-del" hidden>Fshi</button><button id="f-cancel">Anulo</button><button class="sv" id="f-save">Ruaj</button></div>
 </dialog>
+<dialog id="paydlg">
+  <h2 id="py-t" style="margin:0 0 6px;font-size:22px">Pagesa</h2>
+  <label>Shuma (€)</label>
+  <input id="py-amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="p.sh. 25.00">
+  <label>Statusi i pagesës</label>
+  <div class="seg">
+    <button type="button" id="py-unpaid">Pa paguar</button>
+    <button type="button" id="py-paid">Paguar ✓</button>
+  </div>
+  <div class="fr"><button class="del" id="py-clear">Hiq</button><button id="py-cancel">Anulo</button><button class="sv" id="py-save">Ruaj</button></div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 var DN=["E diel","E hënë","E martë","E mërkurë","E enjte","E premte","E shtunë"];
 var MN=["janar","shkurt","mars","prill","maj","qershor","korrik","gusht","shtator","tetor","nëntor","dhjetor"];
-var db={places:[],plans:{},done:{},seq:1};
+var db={places:[],plans:{},done:{},pay:{},seq:1};
 try{var raw=localStorage.getItem("dergesat");if(raw){var o=JSON.parse(raw);
   if(o.stops){o.places=o.stops.map(function(x){return{id:x.id,name:x.name,addr:x.addr,tel:x.tel,note:x.note}});o.plans=o.plans||{};
     o.stops.forEach(function(x){if(x.kind==="once"&&x.date){(o.plans[x.date]=o.plans[x.date]||[]).push(x.id)}});delete o.stops}
+  o.pay=o.pay||{};
   db=o}}catch(e){}
 function save(){try{localStorage.setItem("dergesat",JSON.stringify(db))}catch(e){}if(typeof syncOut==="function")syncOut()}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function nextIso(d){var n=new Date(d);n.setDate(n.getDate()+1);return{k:iso(n),d:n}}
 var cur=new Date();cur.setHours(12,0,0,0);
-var tab=1,editId=null,addAfter=false,sel={},q="";
+var tab=1,editId=null,addAfter=false,sel={},q="",toastTm=null;
 var $=function(i){return document.getElementById(i)};
+function toast(msg){var el=$("toast");if(!el)return;el.textContent=msg;el.classList.add("on");clearTimeout(toastTm);toastTm=setTimeout(function(){el.classList.remove("on")},2800)}
 function esc(t){return String(t||"").replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function byId(id){return db.places.filter(function(s){return s.id==id})[0]}
 function dayIds(){var k=iso(cur);return db.plans[k]=db.plans[k]||[]}
 function forDay(){return dayIds().map(byId).filter(Boolean)}
 function isDone(id){return !!(db.done[iso(cur)]||{})[id]}
+function getPay(id,dk){
+  var k=dk||iso(cur),dp=(db.pay&&db.pay[k])?db.pay[k][id]:null;
+  if(dp&&typeof dp==="object"){return {amt:dp.amt>0?Number(dp.amt):null,paid:!!dp.paid}}
+  var s=byId(id);
+  if(s&&s.amt>0)return {amt:Number(s.amt),paid:false};
+  return {amt:null,paid:false};
+}
+function fmtEur(n){return Number(n||0).toFixed(2)+" €"}
 function match(s,t){t=t.toLowerCase();return !t||(s.name+" "+s.addr).toLowerCase().indexOf(t)>-1}
 function render(){
   var today=iso(new Date())===iso(cur),h="",items;
@@ -199,14 +233,20 @@ function render(){
   if(tab===1){
     items=forDay();
     var nd=items.filter(function(s){return isDone(s.id)}).length;
+    var remCount=items.length-nd;
     $("prog").style.width=items.length?(nd/items.length*100)+"%":"0";
     if(!items.length)h='<div class="empty">Asnjë dërgesë për këtë ditë.<br>Shtyp “+ Shto në ditë” dhe zgjidh nga vendet e ruajtura.</div>';
     else{
       var todo=items.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
-      
       if(todo.length){var ps=routeParts(todo);ps.forEach(function(p,k){h+='<a class="route" target="_blank" rel="noopener" href="'+mapsUrl(p.ch,p.back,p.origin)+'">'+(ps.length>1?'Rruga: pjesa '+(k+1)+' nga '+ps.length+' (ndalesat '+p.from+'–'+p.to+(p.back?' + Prizren':'')+')':'Hap rrugën në Maps ('+todo.length+' ndalesa + kthimi në Prizren)')+'</a>'})}
-      h+='<button class="route" data-a="share" style="width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer">Dërgo listën e ditës</button>';h+=mapSvg(items);
-      h+='<div class="t" style="color:var(--mut);margin:4px 2px">'+nd+' nga '+items.length+' të kryera</div>';
+      h+='<button class="route sec" data-a="share">Dërgo listën e ditës</button>';
+      if(remCount>0){h+='<button class="route sec" data-a="tomorrow-all">Shtyji të pakryerat për nesër ('+remCount+')</button>'}
+      h+=mapSvg(items);
+      var totAmt=0,paidAmt=0;
+      items.forEach(function(s){var p=getPay(s.id);if(p.amt>0){totAmt+=p.amt;if(p.paid)paidAmt+=p.amt}});
+      h+='<div class="pay-sum"><span>'+nd+' nga '+items.length+' të kryera</span>'
+        +(totAmt>0?'<span>Arkëtuar: <strong>'+fmtEur(paidAmt)+'</strong> / '+fmtEur(totAmt)+'</span>':'<span style="color:var(--mut)">Pagesat: '+fmtEur(0)+'</span>')
+        +'</div>';
       items.forEach(function(s,i){h+=card(s,i,true,i===0,i===items.length-1)});
     }
   }else{
@@ -220,22 +260,48 @@ function render(){
   var sq=$("sq");if(sq){sq.oninput=function(){q=sq.value;var p=sq.selectionStart;render();var n=$("sq");n.focus();n.setSelectionRange(p,p)}}
 }
 function card(s,i,day,first,last){
-  var q2=encodeURIComponent(s.lat!=null?s.lat+","+s.lng:(s.addr||s.name)),a='<div class="act">';
-  if(day){a+='<button class="ok" data-a="done" data-id="'+s.id+'">'+(isDone(s.id)?"Ktheje":"Kryer ✓")+'</button>'}
-  else{var inD=dayIds().indexOf(s.id)>-1;a+='<button class="go" data-a="addday" data-id="'+s.id+'"'+(inD?" disabled":"")+'>'+(inD?"Është në ditë":"Shto në "+cur.getDate()+" "+MN[cur.getMonth()])+'</button>'}
+  var q2=encodeURIComponent(s.lat!=null?s.lat+","+s.lng:(s.addr||s.name)),a='<div class="act">',done=day&&isDone(s.id),p=day?getPay(s.id):{amt:s.amt>0?Number(s.amt):null,paid:false};
+  if(day){
+    a+='<button class="ok" data-a="done" data-id="'+s.id+'">'+(done?"Ktheje":"Kryer ✓")+'</button>';
+    a+='<button class="paybtn'+(p.paid?' paid':'')+'" data-a="pay" data-id="'+s.id+'">'+(p.amt>0?fmtEur(p.amt)+(p.paid?' ✓':''):'Pagesa €')+'</button>';
+  }else{var inD=dayIds().indexOf(s.id)>-1;a+='<button class="go" data-a="addday" data-id="'+s.id+'"'+(inD?" disabled":"")+'>'+(inD?"Është në ditë":"Shto në "+cur.getDate()+" "+MN[cur.getMonth()])+'</button>'}
   if(s.addr||s.lat!=null)a+='<a '+(day?'class="go" ':'')+'target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+q2+'">Navigo</a>';
   if(s.tel)a+='<a href="tel:'+esc(s.tel)+'">Telefono</a>';
+  if(day&&!done)a+='<button data-a="tomorrow" data-id="'+s.id+'">Nesër ↪</button>';
   a+='<button data-a="edit" data-id="'+s.id+'">Ndrysho</button>';
   if(day)a+='<button data-a="rm" data-id="'+s.id+'">Hiqe</button>';
   a+='</div>';
-  return '<div class="stop'+(day&&isDone(s.id)?" done":"")+'">'+(day?'<div class="n">'+(i+1)+'</div>':'')
-    +'<div class="b"><div class="nm">'+esc(s.name)+'</div><div class="ad">'+esc(s.addr)+'</div>'+(s.note?'<div class="nt">'+esc(s.note)+'</div>':'')+(day&&s.lat==null?'<div class="hint">⚠ Pa pozicion nga Maps: nuk renditet automatikisht</div>':'')+a+'</div>'
+  var payBadge=p.amt>0?'<div><span class="tag pay-tag'+(day&&p.paid?' paid':'')+'">'+fmtEur(p.amt)+(day?(p.paid?' · Paguar ✓':' · Pa paguar'):' · Standarde')+'</span></div>':'';
+  return '<div class="stop'+(done?" done":"")+'">'+(day?'<div class="n">'+(i+1)+'</div>':'')
+    +'<div class="b"><div class="nm">'+esc(s.name)+'</div><div class="ad">'+esc(s.addr)+'</div>'+(s.note?'<div class="nt">'+esc(s.note)+'</div>':'')+payBadge+(day&&s.lat==null?'<div class="hint">⚠ Pa pozicion nga Maps: nuk renditet automatikisht</div>':'')+a+'</div>'
     +(day?'<div class="mv"><button data-a="up" data-id="'+s.id+'"'+(first?" disabled":"")+' aria-label="Sus">▲</button><button data-a="dn" data-id="'+s.id+'"'+(last?" disabled":"")+' aria-label="Poshtë">▼</button></div>':'')+'</div>';
+}
+function pushToTomorrow(id,k,nk){
+  db.plans[nk]=db.plans[nk]||[];
+  if(db.plans[nk].indexOf(id)<0)db.plans[nk].push(id);
+  if(db.pay[k]&&db.pay[k][id]){
+    db.pay[nk]=db.pay[nk]||{};
+    if(!db.pay[nk][id])db.pay[nk][id]=JSON.parse(JSON.stringify(db.pay[k][id]));
+    delete db.pay[k][id];
+  }
+  if(db.done[k]&&!db.done[k][id])delete db.done[k][id];
+  var l=db.plans[k]||[],idx=l.indexOf(id);
+  if(idx>-1)l.splice(idx,1);
 }
 $("list").addEventListener("click",function(e){
   var b=e.target.closest("button[data-a]");if(!b)return;
   var id=+b.dataset.id,a=b.dataset.a,k=iso(cur),l=dayIds();
   if(a==="done"){db.done[k]=db.done[k]||{};db.done[k][id]=db.done[k][id]?0:Date.now()}
+  else if(a==="pay"){openPay(id);return}
+  else if(a==="tomorrow"){var nx=nextIso(cur);pushToTomorrow(id,k,nx.k);save();render();toast("U shty për nesër ("+nx.d.getDate()+" "+MN[nx.d.getMonth()]+")");return}
+  else if(a==="tomorrow-all"){
+    var rem=forDay().filter(function(s){return !isDone(s.id)});
+    if(!rem.length)return;
+    if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Prek përsëri për t'i shtyrë ("+rem.length+")";setTimeout(function(){if(b.isConnected){delete b.dataset.sure;b.textContent="Shtyji të pakryerat për nesër ("+rem.length+")"}},4000);return}
+    var nx2=nextIso(cur);
+    rem.forEach(function(s){pushToTomorrow(s.id,k,nx2.k)});
+    save();render();toast(rem.length+" dërgesa u shtynë për nesër ("+nx2.d.getDate()+" "+MN[nx2.d.getMonth()]+")");return;
+  }
   else if(a==="sug"){suggest(b);return}
   else if(a==="share"){openShare();return}
   else if(a==="edit"){openDlg(byId(id));return}
@@ -248,7 +314,7 @@ $("prev").onclick=function(){cur.setDate(cur.getDate()-1);render()};
 $("next").onclick=function(){cur.setDate(cur.getDate()+1);render()};
 $("t1").onclick=function(){tab=1;render()};$("t2").onclick=function(){tab=2;render()};
 $("add").onclick=function(){if(tab===1)openPick();else{addAfter=false;openDlg(null)}};
-function openPick(){sel={};$("tp-n").value="";$("tp-l").value="";$("tp-s").textContent="";$("pk-q").value="";$("pk-t").textContent="Zgjidh vendet për "+cur.getDate()+" "+MN[cur.getMonth()];drawPick();$("pick").showModal()}
+function openPick(){sel={};$("tp-n").value="";$("tp-a").value="";$("tp-l").value="";$("tp-s").textContent="";$("pk-q").value="";$("pk-t").textContent="Zgjidh vendet për "+cur.getDate()+" "+MN[cur.getMonth()];drawPick();$("pick").showModal()}
 function drawPick(){
   var l=dayIds(),items=db.places.filter(function(s){return !s.temp&&match(s,$("pk-q").value)}).sort(function(a,b){return a.name.localeCompare(b.name)});
   $("pk-l").innerHTML=items.length?items.map(function(s){var inD=l.indexOf(s.id)>-1;
@@ -264,7 +330,7 @@ $("pk-ok").onclick=function(){var l=dayIds(),n=0;Object.keys(sel).forEach(functi
 $("pk-new").onclick=function(){$("pick").close();addAfter=true;openDlg(null)};
 function openDlg(s){
   editId=s?s.id:null;$("dt").textContent=s?"Ndrysho vendin":"Vend i ri";
-  $("f-name").value=s?s.name:"";$("f-addr").value=s?s.addr:"";$("f-tel").value=s?s.tel:"";$("f-note").value=s?s.note:"";
+  $("f-name").value=s?s.name:"";$("f-addr").value=s?s.addr:"";$("f-tel").value=s?s.tel:"";$("f-amt").value=s&&s.amt>0?s.amt:"";$("f-note").value=s?s.note:"";
   pLat=s&&s.lat!=null?s.lat:null;pLng=s&&s.lat!=null?s.lng:null;$("f-link").value="";
   showSt();resetDel();$("f-del").hidden=!s;$("dlg").showModal();
 }
@@ -450,12 +516,15 @@ $("tp-m").onclick=function(){var t=$("tp-n").value.trim();this.href=t?"https://w
 function addTemp(){var r=readPos($("tp-l").value),st=$("tp-s");
   if(r==="short"){st.textContent="Ky është link i shkurtër. Përdor koordinatat nga Maps (shtyp gjatë mbi vendin).";return false}
   if(!r){st.textContent="Ngjit një link të plotë ose koordinata (p.sh. 42.2139, 20.7397).";return false}
-  var o={id:newId(),name:$("tp-n").value.trim()||(r.txt?r.txt.split(",")[0]:"Vend i ri"),addr:r.txt||"",tel:"",note:"",lat:r.lat,lng:r.lng,temp:true};
+  var amtVal=parseFloat(($("tp-a").value||"").replace(",","."));
+  var o={id:newId(),name:$("tp-n").value.trim()||(r.txt?r.txt.split(",")[0]:"Vend i ri"),addr:r.txt||"",tel:"",note:"",amt:(!isNaN(amtVal)&&amtVal>0)?Math.round(amtVal*100)/100:null,lat:r.lat,lng:r.lng,temp:true};
   db.places.push(o);dayIds().push(o.id);return true}
 $("tp-ok").onclick=function(){if(addTemp()){save();$("pick").close();render()}};
 function shareText(){
-  var it=forDay(),t="📦 Dërgesat: "+DN[cur.getDay()]+", "+cur.getDate()+" "+MN[cur.getMonth()]+"\n";
-  it.forEach(function(s,i){t+="\n"+(i+1)+". "+s.name+(isDone(s.id)?" ✓":"")+"\n";if(s.addr)t+="   "+s.addr+"\n";if(s.tel)t+="   📞 "+s.tel+"\n";if(s.note)t+="   ℹ️ "+s.note+"\n"});
+  var it=forDay(),t="📦 Dërgesat: "+DN[cur.getDay()]+", "+cur.getDate()+" "+MN[cur.getMonth()]+"\n",tot=0,paid=0;
+  it.forEach(function(s,i){var p=getPay(s.id);if(p.amt>0){tot+=p.amt;if(p.paid)paid+=p.amt}
+    t+="\n"+(i+1)+". "+s.name+(isDone(s.id)?" ✓":"")+"\n";if(s.addr)t+="   "+s.addr+"\n";if(s.tel)t+="   📞 "+s.tel+"\n";if(p.amt>0)t+="   💶 "+fmtEur(p.amt)+(p.paid?" (Paguar ✓)":" (Pa paguar)")+"\n";if(s.note)t+="   ℹ️ "+s.note+"\n"});
+  if(tot>0)t+="\n💶 Arkëtuar: "+fmtEur(paid)+" / "+fmtEur(tot)+"\n";
   var go=it.filter(function(s){return !isDone(s.id)&&(s.addr||s.lat!=null)});
   if(go.length){t+="\n🗺 Rruga në Maps (kthimi në Prizren në fund):\n";
     var ps=routeParts(go);ps.forEach(function(p,k){t+=(ps.length>1?"Pjesa "+(k+1)+": ":"")+mapsUrl(p.ch,p.back,p.origin)+"\n"})}
@@ -468,12 +537,40 @@ $("sh-x").onclick=function(){$("shr").close()};
 $("sh-cp").onclick=function(){var ta=$("sh-t"),ok=function(){$("sh-s").textContent="U kopjua."},no=function(){ta.focus();ta.select();try{if(document.execCommand("copy")){ok();return}}catch(e){}$("sh-s").textContent="Shtyp gjatë tekstin, zgjidhe të gjithë dhe kopjoje."};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(ok,no)}else no()};
 $("sh-sh").onclick=function(){if(navigator.share){navigator.share({text:$("sh-t").value}).catch(function(){})}else $("sh-s").textContent="Shpërndarja nuk mbështetet këtu. Përdor WhatsApp, Viber ose Kopjo."};
+var payId=null,pyPaid=false;
+function setPaySeg(){$("py-unpaid").className=!pyPaid?"on":"";$("py-paid").className=pyPaid?"on":""}
+function openPay(id){
+  var s=byId(id);if(!s)return;
+  payId=id;var p=getPay(id);
+  $("py-t").textContent="Pagesa — "+s.name;
+  $("py-amt").value=p.amt>0?p.amt:"";
+  pyPaid=p.paid;setPaySeg();
+  $("paydlg").showModal();
+}
+$("py-unpaid").onclick=function(){pyPaid=false;setPaySeg()};
+$("py-paid").onclick=function(){pyPaid=true;setPaySeg()};
+$("py-cancel").onclick=function(){$("paydlg").close()};
+$("py-clear").onclick=function(){
+  var k=iso(cur),s=byId(payId);db.pay=db.pay||{};db.pay[k]=db.pay[k]||{};
+  if(s&&s.amt>0)db.pay[k][payId]={amt:0,paid:false};
+  else delete db.pay[k][payId];
+  save();$("paydlg").close();render();
+};
+$("py-save").onclick=function(){
+  var k=iso(cur),s=byId(payId),v=parseFloat(($("py-amt").value||"").replace(",","."));
+  db.pay=db.pay||{};db.pay[k]=db.pay[k]||{};
+  if(!isNaN(v)&&v>0){db.pay[k][payId]={amt:Math.round(v*100)/100,paid:pyPaid}}
+  else if(s&&s.amt>0){db.pay[k][payId]={amt:0,paid:false}}
+  else{delete db.pay[k][payId]}
+  save();$("paydlg").close();render();
+};
 $("f-cancel").onclick=function(){$("dlg").close()};
 $("f-del").onclick=function(){if(armDel(this)){
   db.places=db.places.filter(function(s){return s.id!==editId});for(var k in db.plans)db.plans[k]=db.plans[k].filter(function(i){return i!==editId});save();$("dlg").close();render()}};
 $("f-save").onclick=function(){
   var name=$("f-name").value.trim();if(!name){$("f-name").focus();return}
-  var o={name:name,addr:$("f-addr").value.trim(),tel:$("f-tel").value.trim(),note:$("f-note").value.trim(),lat:pLat,lng:pLng};
+  var amtVal=parseFloat(($("f-amt").value||"").replace(",","."));
+  var o={name:name,addr:$("f-addr").value.trim(),tel:$("f-tel").value.trim(),amt:(!isNaN(amtVal)&&amtVal>0)?Math.round(amtVal*100)/100:null,note:$("f-note").value.trim(),lat:pLat,lng:pLng};
   if(editId){var s=byId(editId);for(var k in o)s[k]=o[k]}
   else{o.id=newId();db.places.push(o);if(addAfter)dayIds().push(o.id)}
   save();$("dlg").close();render();
@@ -486,8 +583,8 @@ function syncOut(){
   if(!SH||!ready)return;
   db.places.forEach(function(p){var j=JSON.stringify(p);if(lastP[p.id]!==j){lastP[p.id]=j;SH.doc("places/"+p.id).set(JSON.parse(j)).catch(fail)}});
   Object.keys(lastP).forEach(function(id){if(!db.places.some(function(p){return String(p.id)===id})){delete lastP[id];SH.doc("places/"+id).delete().catch(fail)}});
-  var ks={};Object.keys(db.plans).forEach(function(k){ks[k]=1});Object.keys(db.done).forEach(function(k){ks[k]=1});
-  Object.keys(ks).forEach(function(k){var d={ids:db.plans[k]||[],done:db.done[k]||{}},j=JSON.stringify(d);if(lastD[k]!==j){lastD[k]=j;SH.doc("days/"+k).set(d).catch(fail)}});
+  var ks={};Object.keys(db.plans).forEach(function(k){ks[k]=1});Object.keys(db.done).forEach(function(k){ks[k]=1});Object.keys(db.pay||{}).forEach(function(k){ks[k]=1});
+  Object.keys(ks).forEach(function(k){var d={ids:db.plans[k]||[],done:db.done[k]||{},pay:(db.pay&&db.pay[k])||{}},j=JSON.stringify(d);if(lastD[k]!==j){lastD[k]=j;SH.doc("days/"+k).set(d).catch(fail)}});
 }
 function initShared(){
   if(!window.claude||!claude.use){setSync("Modaliteti lokal (vetëm ky pajisje)");return}
@@ -498,7 +595,7 @@ function initShared(){
     function chk(){if(!(gp&&gd)||ready)return;ready=true;
       var imp=false;try{imp=!!localStorage.getItem("dergesat_imp")}catch(e){}
       if(!db.places.length&&!Object.keys(db.plans).length&&local.places&&local.places.length&&!imp){
-        db.places=local.places;db.plans=local.plans||{};db.done=local.done||{};
+        db.places=local.places;db.plans=local.plans||{};db.done=local.done||{};db.pay=local.pay||{};
         try{localStorage.setItem("dergesat_imp","1")}catch(e){}save()}
       setSync("● Sinkronizuar me të gjithë përdoruesit",true);render()}
     d.collection("places").onSnapshot(function(sn){
@@ -507,8 +604,8 @@ function initShared(){
       db.places=arr;if(!(sn.metadata&&sn.metadata.fromCache))gp=true;if(ready)render();else chk()
     },function(){setSync("Gabim në sinkronizim.")});
     d.collection("days").onSnapshot(function(sn){
-      db.plans={};db.done={};lastD={};
-      sn.docs.forEach(function(x){var v=JSON.parse(JSON.stringify(x.data()||{}));db.plans[x.id]=v.ids||[];db.done[x.id]=v.done||{};lastD[x.id]=JSON.stringify({ids:db.plans[x.id],done:db.done[x.id]})});
+      db.plans={};db.done={};db.pay={};lastD={};
+      sn.docs.forEach(function(x){var v=JSON.parse(JSON.stringify(x.data()||{}));db.plans[x.id]=v.ids||[];db.done[x.id]=v.done||{};db.pay[x.id]=v.pay||{};lastD[x.id]=JSON.stringify({ids:db.plans[x.id],done:db.done[x.id],pay:db.pay[x.id]})});
       if(!(sn.metadata&&sn.metadata.fromCache))gd=true;if(ready)render();else chk()
     },function(){setSync("Gabim në sinkronizim.")});
   }).catch(function(){setSync("Modaliteti lokal (vetëm ky pajisje)")});
