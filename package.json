@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "node -e \"console.log('Static site ready')\"",
     "start": "node server.js",
-    "lint": "node --check server.js"
+    "build": "node -e \"console.log('Static site ready')\"",
+    "lint": "node scripts/check.mjs"
   },
   "dependencies": {
     "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
