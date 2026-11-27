@@ -880,7 +880,7 @@ function initMap(){
    local copy differs from its base has unsent changes: it is retried until the server accepts it,
    and incoming server versions are merged field by field instead of overwriting local edits. */
 var LIC='';
-var sync={on:false,ready:false,synth:false,base:{p:{},d:{}},sent:{p:{},d:{}},force:false,inflight:{},polling:{},wver:{places:0,days:0},initP:null,allP:null,iv:null,outTm:null,retryTm:null,retryN:0,fails:0,warned:false,miss:{p:{},d:{}},revived:{p:{},d:{}},lost:0,told:0,stuck:false,delOk:false};
+var sync={on:false,ready:false,synth:false,base:{p:{},d:{}},sent:{p:{},d:{}},force:false,inflight:{},polling:{},wver:{places:0,days:0},initP:null,allP:null,iv:null,outTm:null,retryTm:null,retryN:0,fails:0,warned:false,miss:{p:{},d:{}},revived:{p:{},d:{}},push:{p:{},d:{}},clash:{p:{},d:{}},lost:0,told:0,stuck:false,delOk:false};
 function rpc(fn,body){
   var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort()},15000);
   return fetch(API+fn,{method:'POST',headers:API_HEADERS,body:JSON.stringify(body),signal:ctl.signal})
@@ -911,13 +911,13 @@ function loadBase(){
 function sentOr(t,id){var s=sync.sent[t][id];return s!==undefined?s:sync.base[t][id]}
 function pending(){
   var out=[],seen={};
-  db.places.forEach(function(p){seen[p.id]=1;if(canon(normPlace(p))!==sentOr('p',p.id))out.push({key:'p:'+p.id,coll:'places',id:String(p.id)})});
+  db.places.forEach(function(p){seen[p.id]=1;if(canon(normPlace(p))!==sentOr('p',p.id)||sync.push.p[p.id])out.push({key:'p:'+p.id,coll:'places',id:String(p.id)})});
   /* A place missing locally is deleted on the server ONLY if the user deleted it here (db.gone).
      Anything else (lost cache, another window, a bug) just reloads it from the server. */
   Object.keys(sync.base.p).forEach(function(id){if(!seen[id]&&db.gone[id])out.push({key:'p:'+id,coll:'places',id:id,del:true})});
   dayKeys().forEach(function(k){
     var v=normDay(dayDoc(k)),b=sentOr('d',k);
-    if(b===undefined?!isEmptyDay(v):canon(v)!==b)out.push({key:'d:'+k,coll:'days',id:k});
+    if((b===undefined?!isEmptyDay(v):canon(v)!==b)||(sync.push.d[k]&&!isEmptyDay(v)))out.push({key:'d:'+k,coll:'days',id:k});
   });
   return out;
 }
@@ -929,9 +929,12 @@ function merge3(b,l,s){
   });
   return out;
 }
+/* Stops: start from the server's list (its order is the reference, so every device merges to the same
+   result and nobody rewrites the day just to change the order), drop the ones removed here, then add
+   the ones added here. */
 function mergeIds(b,l,s){
-  var res=l.filter(function(x){return !(b.indexOf(x)>-1&&s.indexOf(x)<0)});
-  s.forEach(function(x){if(b.indexOf(x)<0&&l.indexOf(x)<0)res.push(x)});
+  var res=s.filter(function(x){return !(b.indexOf(x)>-1&&l.indexOf(x)<0)});
+  l.forEach(function(x){if(b.indexOf(x)<0&&res.indexOf(x)<0)res.push(x)});
   return res;
 }
 /* Three-way merge of one document: unchanged locally -> take server; unchanged on the server ->
@@ -944,14 +947,20 @@ function resolve(bj,l,s,lj,sj,mergeFn){
 }
 /* A write is confirmed only when a later read returns exactly what was sent. If another device
    overwrote it meanwhile, the base stays at the old version and the 3-way merge re-applies our change. */
+/* Returns the version we wrote when we should give up re-applying it (see below), otherwise null. */
 function confirmSent(t,id,sj){
-  var sn=sync.sent[t][id];if(sn===undefined)return;
-  if(sj===sn)sync.base[t][id]=sj;
-  else if(sj===undefined&&sync.revived[t][id]===1){
-    /* We uploaded a lost document again and the server still does not return it: stop retrying and warn. */
-    sync.revived[t][id]=2;sync.base[t][id]=sn;sync.stuck=true;
-  }
+  var sn=sync.sent[t][id];if(sn===undefined)return null;
   delete sync.sent[t][id];
+  if(sj===sn){sync.base[t][id]=sj;sync.clash[t][id]=0;return null}
+  if(sj===undefined&&sync.revived[t][id]===1){
+    /* We uploaded a lost document again and the server still does not return it: stop retrying and warn. */
+    sync.revived[t][id]=2;delete sync.push[t][id];sync.stuck=true;return null;
+  }
+  /* Another device overwrote our write. Our change is merged in again once; if it is overwritten a
+     second time (two devices with opposite changes), the other device's version wins - otherwise both
+     would rewrite the document forever. */
+  sync.clash[t][id]=(sync.clash[t][id]||0)+1;
+  return sync.clash[t][id]>=2?sn:null;
 }
 /* full = places and days were read together in one round (pullAll/initialPull). Only such reads may
    remove or revive anything, and only after two of them agree. */
@@ -965,20 +974,24 @@ function applyPlaces(list,full){
   var mass=ids.filter(function(id){return !srv[id]&&base[id]!==undefined&&!db.gone[id]}).length>=5;
   ids.forEach(function(id){
     var s=srv[id],l=loc[id],sj=canon(s),lj=canon(l),gone=!!db.gone[id];
-    confirmSent('p',id,sj);
+    var giveUp=confirmSent('p',id,sj);
+    if(giveUp!==null&&s&&lj===giveUp){base[id]=sj;sync.clash.p[id]=0;next.push(s);changed=true;return}
     if(s)delete sync.miss.p[id];
     if(!l&&!gone&&base[id]!==undefined){l=JSON.parse(base[id]);lj=base[id];changed=true}
     if(gone&&!s)delete db.gone[id];
     if(!s&&l&&!gone&&base[id]!==undefined){
       /* The server stopped returning a place this device has. Keep it until two complete reads agree. */
       var n=full?(sync.miss.p[id]=(sync.miss.p[id]||0)+1):0;
-      if(n>=2&&(used[id]||mass)){
+      if(n>=2){
+        var lost=used[id]||mass;
         /* Still listed on a day, or many vanished at once: the server lost it (deleting in the app never
            does that). Upload this device's copy again - once per session, so a broken server cannot cause a write loop. */
-        if(!sync.revived.p[id]){sync.revived.p[id]=1;delete base[id];sync.lost++}
-      }else if(n>=2&&!sync.revived.p[id]){
-        /* One place deleted on another device: remove it here too, keeping a copy in this device's trash. */
-        trashAdd(l,'server');delete base[id];delete sync.miss.p[id];changed=true;return;
+        if(lost&&!sync.revived.p[id]){sync.revived.p[id]=1;sync.push.p[id]=1;sync.lost++;next.push(l);return}
+        /* Put back once already: give it a few more reads before following the server. */
+        if(lost&&n<6){next.push(l);return}
+        /* Deleted on another device (or gone again after being put back): remove it here too, keeping this
+           device's copy in the trash so an admin can restore it. */
+        trashAdd(l,'server');delete base[id];delete sync.miss.p[id];delete sync.push.p[id];changed=true;return;
       }
       next.push(l);return;
     }
@@ -995,7 +1008,8 @@ function applyDays(list,full){
   list.forEach(function(r){if(r&&isDayKey(String(r.id)))srv[r.id]=normDay(r.data)});
   uniq(dayKeys().concat(Object.keys(srv),Object.keys(base))).forEach(function(k){
     var s=srv[k],has=db.plans[k]||db.done[k]||db.pay[k],l=has?normDay(dayDoc(k)):undefined,sj=canon(s),lj=canon(l);
-    confirmSent('d',k,sj);
+    var giveUp=confirmSent('d',k,sj);
+    if(giveUp!==null&&s&&lj===giveUp){base[k]=sj;sync.clash.d[k]=0;setDay(k,s);changed=true;return}
     if(s)delete sync.miss.d[k];
     if(l&&base[k]===undefined&&isEmptyDay(l)){l=undefined;lj=undefined}
     /* Days are never deleted locally on purpose: a missing local copy means "unchanged". */
@@ -1004,7 +1018,7 @@ function applyDays(list,full){
       /* The app never deletes days, so a day the server stopped returning was lost there. Keep this
          device's copy, and once two complete reads agree upload it again (once per session). */
       var n=full?(sync.miss.d[k]=(sync.miss.d[k]||0)+1):0;
-      if(n>=2&&!sync.revived.d[k]&&!isEmptyDay(l)){sync.revived.d[k]=1;delete base[k];sync.lost++}
+      if(n>=2&&!sync.revived.d[k]&&!isEmptyDay(l)){sync.revived.d[k]=1;sync.push.d[k]=1;sync.lost++}
       setDay(k,l);return;
     }
     var r=resolve(base[k],l,s,lj,sj,function(b,l2,s2){b=b||{ids:[],done:{},pay:{}};return normDay({ids:mergeIds(b.ids,l2.ids,s2.ids),done:merge3(b.done,l2.done,s2.done),pay:merge3(b.pay,l2.pay,s2.pay)})});
@@ -1094,7 +1108,7 @@ function write(x){
   (x.del?rpc('kv_del',{lic:LIC,coll:x.coll,kid:x.id}):rpc('kv_set',{lic:LIC,coll:x.coll,kid:x.id,d:JSON.parse(j)}))
   .then(function(){
     var sm=isP?sync.sent.p:sync.sent.d;
-    if(x.del){delete bm[x.id];delete sm[x.id];if(isP)delete db.gone[x.id]}else sm[x.id]=j;
+    if(x.del){delete bm[x.id];delete sm[x.id];if(isP)delete db.gone[x.id]}else{sm[x.id]=j;delete sync.push[isP?'p':'d'][x.id]}
     saveBase();sync.retryN=0;
   },function(e){
     if(e&&e.code==='license'){revoked();return}
