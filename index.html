@@ -350,7 +350,7 @@ function normDay(v){
   Object.keys(p).forEach(function(k){var e=p[k];if(/^\d+$/.test(k)&&e&&typeof e==='object'){var a=num(e.amt);pay[k]={amt:a>0?Math.round(a*100)/100:0,paid:!!e.paid}}});
   return {ids:ids,done:done,pay:pay};
 }
-function emptyDb(){return {places:[],plans:{},done:{},pay:{}}}
+function emptyDb(){return {places:[],plans:{},done:{},pay:{},gone:{}}}
 function loadDb(){
   var o=null;try{o=JSON.parse(store.get(LS_DB)||'null')}catch(e){}
   var d=emptyDb();
@@ -360,6 +360,7 @@ function loadDb(){
     o.stops.forEach(function(x){if(x.kind==='once'&&x.date)(o.plans[x.date]=o.plans[x.date]||[]).push(x.id)});
   }
   (Array.isArray(o.places)?o.places:[]).forEach(function(p){p=normPlace(p);if(p&&!d.places.some(function(q){return q.id===p.id}))d.places.push(p)});
+  if(o.gone&&typeof o.gone==='object')Object.keys(o.gone).forEach(function(id){if(/^\d+$/.test(id))d.gone[id]=1});
   var plans=o.plans||{},done=o.done||{},pay=o.pay||{};
   uniq(Object.keys(plans).concat(Object.keys(done),Object.keys(pay))).filter(isDayKey).forEach(function(k){
     var v=normDay({ids:plans[k],done:done[k],pay:pay[k]});d.plans[k]=v.ids;d.done[k]=v.done;d.pay[k]=v.pay;
@@ -367,7 +368,14 @@ function loadDb(){
   return d;
 }
 var db=loadDb();
-function persist(){store.set(LS_DB,JSON.stringify(db))}
+store.del(LS_BASE); /* older builds kept the sync state in a separate key, which could go out of step with the data */
+/* Data and sync state are written together in one key, so another window or a failed write can never
+   leave a sync state that describes data this device no longer has. */
+function persist(){
+  var o={places:db.places,plans:db.plans,done:db.done,pay:db.pay,gone:db.gone};
+  if(typeof sync!=='undefined'&&sync)o.sync={p:sync.base.p,d:sync.base.d,sp:sync.sent.p,sd:sync.sent.d,synth:sync.synth};
+  store.set(LS_DB,JSON.stringify(o));
+}
 function save(){persist();syncOut(true)}
 function byId(id){id=Number(id);for(var i=0;i<db.places.length;i++)if(db.places[i].id===id)return db.places[i];return null}
 function visiblePlaces(){return db.places.filter(function(s){return !s.temp&&!s.deleted})}
@@ -494,7 +502,7 @@ function removeFromDay(id,k){
   var s=byId(id);
   /* A "today only" place that is no longer on any day is deleted, otherwise it would be unreachable. */
   if(s&&s.temp&&!Object.keys(db.plans).some(function(kk){return planOf(kk).indexOf(id)>-1})){
-    db.places=db.places.filter(function(p){return p.id!==id});
+    db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1;
     if(db.done[k])delete db.done[k][id];
     if(db.pay[k])delete db.pay[k][id];
   }
@@ -642,7 +650,7 @@ $('f-del').onclick=function(){
     if(i>-1){l.splice(i,1);if(db.done[k])delete db.done[k][id];if(db.pay[k])delete db.pay[k][id]}
   });
   if(Object.keys(db.plans).some(function(k){return planOf(k).indexOf(id)>-1}))s.deleted=true;
-  else db.places=db.places.filter(function(p){return p.id!==id});
+  else{db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1}
   save();render();toast('Vendi u fshi.');
 };
 $('f-save').onclick=function(){
@@ -805,9 +813,9 @@ function rpc(fn,body){
 }
 function rows(o){return o&&Array.isArray(o.rows)?o.rows:[]}
 function setSync(t,ok,bad){var e=$('sync');e.textContent=t;e.className=ok?'okk':(bad?'bad':'')}
-function saveBase(){store.set(LS_BASE,JSON.stringify({p:sync.base.p,d:sync.base.d,sp:sync.sent.p,sd:sync.sent.d,synth:sync.synth}))}
+function saveBase(){persist()}
 function loadBase(){
-  var b=null;try{b=JSON.parse(store.get(LS_BASE)||'null')}catch(e){}
+  var b=null;try{var o=JSON.parse(store.get(LS_DB)||'null');b=o&&o.sync}catch(e){}
   if(b&&b.p&&b.d){sync.base={p:b.p,d:b.d};sync.sent={p:b.sp||{},d:b.sd||{}};sync.synth=!!b.synth;return}
   /* First start of this version: assume the cached data is what the server had, so that
      edits made from now on (even offline) are recognised as unsent changes. */
@@ -820,7 +828,9 @@ function sentOr(t,id){var s=sync.sent[t][id];return s!==undefined?s:sync.base[t]
 function pending(){
   var out=[],seen={};
   db.places.forEach(function(p){seen[p.id]=1;if(canon(normPlace(p))!==sentOr('p',p.id))out.push({key:'p:'+p.id,coll:'places',id:String(p.id)})});
-  Object.keys(sync.base.p).forEach(function(id){if(!seen[id])out.push({key:'p:'+id,coll:'places',id:id,del:true})});
+  /* A place missing locally is deleted on the server ONLY if the user deleted it here (db.gone).
+     Anything else (lost cache, another window, a bug) just reloads it from the server. */
+  Object.keys(sync.base.p).forEach(function(id){if(!seen[id]&&db.gone[id])out.push({key:'p:'+id,coll:'places',id:id,del:true})});
   dayKeys().forEach(function(k){
     var v=normDay(dayDoc(k)),b=sentOr('d',k);
     if(b===undefined?!isEmptyDay(v):canon(v)!==b)out.push({key:'d:'+k,coll:'days',id:k});
@@ -855,9 +865,15 @@ function applyPlaces(list){
   var base=sync.base.p,srv={},loc={},next=[],changed=false;
   list.forEach(function(r){var p=r&&normPlace(r.data);if(p&&String(p.id)===String(r.id))srv[p.id]=p});
   db.places.forEach(function(p){loc[p.id]=normPlace(p)});
+  var used={};Object.keys(db.plans).forEach(function(k){planOf(k).forEach(function(i){used[i]=1})});
   uniq(db.places.map(function(p){return String(p.id)}).concat(Object.keys(srv),Object.keys(base))).forEach(function(id){
-    var s=srv[id],l=loc[id],sj=canon(s),lj=canon(l);
+    var s=srv[id],l=loc[id],sj=canon(s),lj=canon(l),gone=!!db.gone[id];
     confirmSent('p',id,sj);
+    if(!l&&!gone&&base[id]!==undefined){l=JSON.parse(base[id]);lj=base[id]}
+    if(gone&&!s)delete db.gone[id];
+    /* Recovery: the server lost a place that a day still lists. Deleting through the app never removes
+       a place that is on a day, so it was not deleted on purpose: upload this device's copy again. */
+    if(!s&&l&&!gone&&used[id]){delete base[id];next.push(l);changed=true;return}
     var r=resolve(base[id],l,s,lj,sj,function(b,l2,s2){return normPlace(merge3(b,l2,s2))});
     if(canon(r)!==lj)changed=true;
     if(sj===undefined)delete base[id];else base[id]=sj;
@@ -889,7 +905,7 @@ function initialPull(){
     /* Empty shared database and local data that was never uploaded: upload it (one-time import). */
     if(sync.synth&&!rp.length&&!rd.length&&db.places.length&&!store.get(LS_IMP)){sync.base={p:{},d:{}};store.set(LS_IMP,'1')}
     sync.synth=false;
-    applyPlaces(rp);applyDays(rd);saveBase();persist();
+    applyDays(rd);applyPlaces(rp);persist();
     sync.ready=true;render();
     if(pending().length)syncOut();else netOk();
   },function(e){if(e&&e.code==='license'){revoked();return}netFail(e,false)})
@@ -937,7 +953,7 @@ function write(x){
   (x.del?rpc('kv_del',{lic:LIC,coll:x.coll,kid:x.id}):rpc('kv_set',{lic:LIC,coll:x.coll,kid:x.id,d:JSON.parse(j)}))
   .then(function(){
     var sm=isP?sync.sent.p:sync.sent.d;
-    if(x.del){delete bm[x.id];delete sm[x.id]}else sm[x.id]=j;
+    if(x.del){delete bm[x.id];delete sm[x.id];if(isP)delete db.gone[x.id]}else sm[x.id]=j;
     saveBase();sync.retryN=0;
   },function(e){
     if(e&&e.code==='license'){revoked();return}
@@ -1002,7 +1018,7 @@ function revoked(){store.del(LK);location.reload()}
 function adoptCache(c){
   var h=hash(c),o=store.get(LS_OWNER);
   /* No owner recorded (data left by an older version after logout) is treated as foreign too. */
-  if((o&&o!==h)||(!o&&db.places.length)){db=emptyDb();[LS_DB,LS_BASE,LS_IMP].forEach(store.del);loadBase()}
+  if((o&&o!==h)||(!o&&db.places.length)){db=emptyDb();[LS_DB,LS_IMP].forEach(store.del);loadBase()}
   store.set(LS_OWNER,h);
 }
 function applyRole(r){store.set(RK,r||'driver');document.body.classList.toggle('driver',r!=='admin'&&r!=='manager');document.body.classList.toggle('mgr',r==='manager')}
@@ -1040,6 +1056,17 @@ $('dil').onclick=function(){
   [LK,RK,LS_DB,LS_BASE,LS_IMP,LS_OWNER].forEach(store.del);
   location.reload();
 };
+
+/* Another window or tab of the app changed the saved state: logout there logs out here too, and
+   otherwise this window continues from that window's data and sync state. */
+window.addEventListener('storage',function(e){
+  if(e.storageArea!==localStorage)return;
+  if((e.key===LK&&!e.newValue)||(e.key===LS_DB&&!e.newValue)||e.key===null){location.reload();return}
+  if(e.key!==LS_DB||!started)return;
+  db=loadDb();var b=null;try{b=JSON.parse(e.newValue).sync}catch(x){}
+  if(b&&b.p&&b.d){sync.base={p:b.p,d:b.d};sync.sent={p:b.sp||{},d:b.sd||{}}}
+  render();
+});
 
 /* A PWA left open overnight jumps to the new day when it comes back. */
 document.addEventListener('visibilitychange',function(){

@@ -1,5 +1,5 @@
 // Bump CACHE whenever the precached files change.
-const CACHE = 'v5';
+const CACHE = 'v6';
 const PRECACHE = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 // Versioned third-party assets (Leaflet, Google Fonts) are safe to serve cache-first.
 const CDN = ['https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
