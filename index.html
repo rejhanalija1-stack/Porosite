@@ -190,8 +190,22 @@ input[type=checkbox]{accent-color:var(--acc)}
 #gmsg{min-height:22px;margin-top:14px;color:var(--bad);font-weight:600}
 .g-foot{margin-top:34px;color:var(--mut);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
 
+/* safety: missing-data warning, restore dialog, other-window screen */
+.warn{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:var(--r);background:var(--bad-soft);color:var(--bad);font-weight:600;font-size:14px}
+.warn button,.tools button{flex:none;min-height:36px;padding:6px 14px;border:0;border-radius:var(--pill);font:600 13px/1.2 var(--fb)}
+.warn button{background:var(--bad);color:#fff}
+.tools{display:flex;justify-content:flex-end;margin:0 0 12px}
+.tools button{border:1px solid var(--line);background:var(--card);color:var(--text)}
+.rlist{margin:8px 0;max-height:45vh;overflow:auto}
+.ri{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.ri .b{flex:1;min-width:0}
+#rst .row{flex-wrap:wrap}
+#rst .mapbtn{white-space:normal;min-height:44px;padding:8px 16px}
+#other{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--head);color:var(--text);text-align:center}
+#other button{width:100%;min-height:52px;border:0;border-radius:var(--pill);background:var(--acc);color:var(--onacc);font:700 17px/1 var(--ft)}
+
 /* roles */
-body.driver .tabs,body.driver #add,body.driver [data-a="edit"],body.driver [data-a="rm"]{display:none!important}
+body.driver .admin-only,body.driver .tabs,body.driver #add,body.driver [data-a="edit"],body.driver [data-a="rm"]{display:none!important}
 body.mgr #f-del{display:none!important}
 </style>
 </head>
@@ -271,6 +285,13 @@ body.mgr #f-del{display:none!important}
   </div>
   <div class="fr"><button type="button" class="del" id="py-clear">Hiq</button><button type="button" id="py-cancel">Anulo</button><button type="button" class="sv" id="py-save">Ruaj</button></div>
 </dialog>
+<dialog id="rst" aria-labelledby="rs-t">
+  <h2 id="rs-t">Rikthe vendet e fshira</h2>
+  <div class="hint" id="rs-h"></div>
+  <div id="rs-l" class="rlist"></div>
+  <div class="row mt"><button type="button" class="mapbtn grow" id="rs-all">Rikthe të gjitha</button><button type="button" class="mapbtn grow" id="rs-dl">Shkarko kopjen rezervë</button></div>
+  <div class="fr"><button type="button" id="rs-x">Mbyll</button></div>
+</dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -279,7 +300,7 @@ body.mgr #f-del{display:none!important}
 var DN=["E diel","E hënë","E martë","E mërkurë","E enjte","E premte","E shtunë"];
 var MN=["janar","shkurt","mars","prill","maj","qershor","korrik","gusht","shtator","tetor","nëntor","dhjetor"];
 var DEPOT={lat:42.2139,lng:20.7397,name:'Prizren'};
-var LS_DB='dergesat',LS_BASE='dergesat_base',LS_IMP='dergesat_imp',LS_OWNER='dergesat_owner',LK='lic_code',RK='lic_role';
+var LS_DB='dergesat',LS_BASE='dergesat_base',LS_IMP='dergesat_imp',LS_OWNER='dergesat_owner',LK='lic_code',RK='lic_role',LS_ACTIVE='dergesat_active',LS_TRASH='dergesat_trash',LS_PREV='dergesat_prev';
 var API='https://kxesbwziuzyjoyobpgvw.supabase.co/rest/v1/rpc/';
 var API_HEADERS={apikey:'sb_publishable_WgVdMUOR7N9FgJJwz54VtA_4UAPrLuW','Content-Type':'application/json'};
 var LEAFLET_JS='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
@@ -290,7 +311,7 @@ var HINT='Më e sigurta: në Maps shtyp gjatë mbi vendin që do, pastaj shtyp k
 var $=function(id){return document.getElementById(id)};
 var store={
   get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},
-  set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  set:function(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},
   del:function(k){try{localStorage.removeItem(k)}catch(e){}}
 };
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -331,6 +352,7 @@ function hintBad(el,msg){el.textContent=msg;el.className='hint bad'}
    db.places: [{id,name,addr,tel,note,amt,lat,lng,temp?,deleted?}]
    db.plans[day]: [placeId...]   db.done[day][placeId]: timestamp   db.pay[day][placeId]: {amt,paid}
    On the server: collection "places" (one doc per place) and "days" (one doc per day: {ids,done,pay}). */
+var PLACE_KEYS={id:1,name:1,addr:1,tel:1,note:1,amt:1,lat:1,lng:1,temp:1,deleted:1};
 function normPlace(p){
   if(!p||typeof p!=='object')return null;
   var id=Number(p.id);
@@ -340,6 +362,8 @@ function normPlace(p){
   var o={id:id,name:str(p.name)||'Pa emër',addr:str(p.addr),tel:str(p.tel),note:str(p.note),amt:amt>0?Math.round(amt*100)/100:null,lat:lat,lng:lng};
   if(p.temp)o.temp=true;
   if(p.deleted)o.deleted=true;
+  /* Keep fields this version does not know (written by other versions): writing a place back never drops them. */
+  Object.keys(p).forEach(function(k){if(!PLACE_KEYS[k]&&p[k]!==undefined&&typeof p[k]!=='function')o[k]=p[k]});
   return o;
 }
 function normDay(v){
@@ -371,10 +395,17 @@ var db=loadDb();
 store.del(LS_BASE); /* older builds kept the sync state in a separate key, which could go out of step with the data */
 /* Data and sync state are written together in one key, so another window or a failed write can never
    leave a sync state that describes data this device no longer has. */
+/* Only the window that owns the data writes it (see claim()); the owner tag stops one license's data
+   from ever being read as another's. A failed write (full storage) is reported, never ignored. */
+var active=false,storeOk=true,myOwner='';
 function persist(){
-  var o={places:db.places,plans:db.plans,done:db.done,pay:db.pay,gone:db.gone};
+  if(!active)return true;
+  var o={owner:myOwner,places:db.places,plans:db.plans,done:db.done,pay:db.pay,gone:db.gone};
   if(typeof sync!=='undefined'&&sync)o.sync={p:sync.base.p,d:sync.base.d,sp:sync.sent.p,sd:sync.sent.d,synth:sync.synth};
-  store.set(LS_DB,JSON.stringify(o));
+  var j=JSON.stringify(o),ok=store.set(LS_DB,j);
+  if(!ok){trimTrash(true);ok=store.set(LS_DB,j)}
+  if(ok!==storeOk){storeOk=ok;if(sync&&sync.on)showStatus()}
+  return ok;
 }
 function save(){persist();syncOut(true)}
 function byId(id){id=Number(id);for(var i=0;i<db.places.length;i++)if(db.places[i].id===id)return db.places[i];return null}
@@ -392,6 +423,19 @@ function getPay(id,k){
   var s=byId(id);
   return s&&s.amt>0?{amt:Number(s.amt),paid:false}:{amt:null,paid:false};
 }
+
+/* ===== Trash: every place removed from this device is kept here for 60 days ===== */
+function loadTrash(){var t=null;try{t=JSON.parse(store.get(LS_TRASH)||'null')}catch(e){}return t&&typeof t==='object'&&!Array.isArray(t)?t:{}}
+var trash=loadTrash();
+function saveTrash(){if(active)store.set(LS_TRASH,JSON.stringify(trash))}
+function trimTrash(hard){
+  var lim=Date.now()-60*864e5;
+  Object.keys(trash).sort(function(a,b){return ((trash[b]||{}).at||0)-((trash[a]||{}).at||0)}).forEach(function(id,i){
+    var x=trash[id];if(!x||!x.p||!(x.at>lim)||i>=(hard?100:500))delete trash[id];
+  });
+  if(hard)saveTrash();
+}
+function trashAdd(p,why){var n=normPlace(p);if(!n)return;trash[n.id]={p:n,at:Date.now(),why:why};trimTrash(false);saveTrash()}
 
 /* ===== Route ordering (pure: never writes) ===== */
 function hav(a,b){var R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lng-a.lng)*r,x=Math.pow(Math.sin(dl/2),2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.pow(Math.sin(dn/2),2);return 2*R*Math.asin(Math.sqrt(x))}
@@ -435,6 +479,7 @@ function render(){
   $('prev').style.visibility=$('next').style.visibility=tab===1?'visible':'hidden';
   $('add').textContent=tab===1?'+ Shto në ditë':'+ Vend i ri';
   $('sq').hidden=tab!==2;
+  var lostIds=planOf(k).filter(function(id){return !byId(id)});
   if(tab===1){
     var items=dayItems(k),nd=items.filter(function(s){return isDone(s.id)}).length,remCount=items.length-nd;
     $('prog').style.width=items.length?(nd/items.length*100)+'%':'0';
@@ -457,6 +502,8 @@ function render(){
     else if(!found.length)h='<div class="empty">Asnjë vend nuk përputhet me “'+esc(q)+'”.</div>';
     found.forEach(function(s){h+=card(s,0,false)});
   }
+  if(tab===1&&lostIds.length)h='<div class="warn"><span>⚠ '+lostIds.length+(lostIds.length===1?' ndalesë mungon':' ndalesa mungojnë')+' në databazë</span><button type="button" class="admin-only" data-a="restore">Rikthe</button></div>'+h;
+  if(tab===2){var nr=restoreCandidates().length;if(nr)h='<div class="tools admin-only"><button type="button" data-a="restore">Rikthe vende të fshira ('+nr+')</button></div>'+h}
   list.innerHTML=h;
   if(focus){var n=list.querySelector('[data-a="'+CSS.escape(focus.a)+'"]'+(focus.id?'[data-id="'+CSS.escape(focus.id)+'"]':''));if(n)n.focus({preventScroll:true})}
   if(tab===1&&$('lmap'))initMap();
@@ -502,7 +549,7 @@ function removeFromDay(id,k){
   var s=byId(id);
   /* A "today only" place that is no longer on any day is deleted, otherwise it would be unreachable. */
   if(s&&s.temp&&!Object.keys(db.plans).some(function(kk){return planOf(kk).indexOf(id)>-1})){
-    db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1;
+    trashAdd(s,'user');db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1;
     if(db.done[k])delete db.done[k][id];
     if(db.pay[k])delete db.pay[k][id];
   }
@@ -512,6 +559,7 @@ $('list').addEventListener('click',function(e){
   var b=e.target.closest('button[data-a]');if(!b||b.disabled)return;
   var a=b.dataset.a,id=Number(b.dataset.id),k=iso(cur),nx;
   if(a==='share'){openShare();return}
+  if(a==='restore'){openRestore();return}
   if(a==='pay'){openPay(id);return}
   if(a==='edit'){var s=byId(id);if(s)openDlg(s);return}
   if(a==='tomorrow-all'){
@@ -537,15 +585,16 @@ $('sq').addEventListener('input',function(){q=this.value;render()});
 $('add').onclick=function(){if(tab===1)openPick();else{addAfter=false;openDlg(null)}};
 
 /* ===== Pick places for the day ===== */
+var pickDay='';
 function openPick(){
-  sel={};['tp-n','tp-a','tp-l','pk-q'].forEach(function(i){$(i).value=''});
+  pickDay=iso(cur);sel={};['tp-n','tp-a','tp-l','pk-q'].forEach(function(i){$(i).value=''});
   $('tp-s').textContent='';$('tp-s').className='hint';
   $('pk-t').textContent='Zgjidh vendet për '+dayLabel(cur);
   drawPick();$('pick').showModal();
 }
 function pickCount(){var n=Object.keys(sel).length;$('pk-ok').textContent=n?'Shto ('+n+')':'Shto'}
 function drawPick(){
-  var l=planOf(iso(cur)),all=visiblePlaces(),items=all.filter(function(s){return match(s,$('pk-q').value)}).sort(byName);
+  var l=planOf(pickDay||iso(cur)),all=visiblePlaces(),items=all.filter(function(s){return match(s,$('pk-q').value)}).sort(byName);
   $('pk-l').innerHTML=items.length?items.map(function(s){var inD=l.indexOf(s.id)>-1;
     return '<label class="pi'+(inD?' in':'')+'"><input type="checkbox" data-id="'+esc(s.id)+'"'+(inD?' checked disabled':(sel[s.id]?' checked':''))+'><div class="b"><div class="nm">'+esc(s.name)+'</div><div class="ad">'+esc(s.addr)+'</div></div></label>'}).join('')
     :'<div class="empty">'+(all.length?'Asnjë vend nuk përputhet me kërkimin.':'Asnjë vend. Shtyp “+ Vend i ri”.')+'</div>';
@@ -567,7 +616,7 @@ function addFromPick(requireTemp){
   }else if($('tp-n').value.trim()||$('tp-a').value.trim()){
     hintBad(st,'Për vendin vetëm për këtë ditë duhet linku ose koordinatat nga Maps.');$('tp-l').focus();return;
   }
-  var k=iso(cur),ids=selectedNotInDay(k);
+  var k=pickDay||iso(cur),ids=selectedNotInDay(k);
   if(!ids.length&&!temp){hintBad(st,'Zgjidh të paktën një vend nga lista, ose ngjit link/koordinata.');return}
   var l=planFor(k);ids.forEach(function(id){l.push(id)});
   if(temp){db.places.push(temp);l.push(temp.id)}
@@ -577,9 +626,9 @@ $('pk-ok').onclick=function(){addFromPick(false)};
 $('tp-ok').onclick=function(){addFromPick(true)};
 $('pk-x').onclick=function(){$('pick').close()};
 $('pk-new').onclick=function(){
-  var k=iso(cur),ids=selectedNotInDay(k);
+  var k=pickDay||iso(cur),ids=selectedNotInDay(k);
   if(ids.length){var l=planFor(k);ids.forEach(function(id){l.push(id)});save();render();toast(ids.length+' vende u shtuan në ditë')}
-  $('pick').close();addAfter=true;openDlg(null);
+  $('pick').close();addAfter=true;openDlg(null,k);
 };
 $('tp-m').onclick=function(){var t=$('tp-n').value.trim();this.href=t?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(t):'https://www.google.com/maps'};
 
@@ -604,10 +653,10 @@ function readPos(t){
 
 /* ===== Place dialog ===== */
 var pLat=null,pLng=null,dlgTok=0;
-var dlgSnap=null;
+var dlgSnap=null,dlgDay='';
 function dlgVals(){return {name:$('f-name').value.trim(),addr:$('f-addr').value.trim(),tel:$('f-tel').value.trim(),amt:$('f-amt').value.trim(),note:$('f-note').value.trim()}}
-function openDlg(s){
-  dlgTok++;editId=s?s.id:null;$('dt').textContent=s?'Ndrysho vendin':'Vend i ri';
+function openDlg(s,day){
+  dlgTok++;dlgDay=day||iso(cur);editId=s?s.id:null;$('dt').textContent=s?'Ndrysho vendin':'Vend i ri';
   $('f-name').value=s?s.name:'';$('f-addr').value=s?s.addr:'';$('f-tel').value=s?s.tel:'';$('f-amt').value=s&&s.amt>0?String(s.amt):'';$('f-note').value=s?s.note:'';
   pLat=s&&s.lat!=null?s.lat:null;pLng=s&&s.lat!=null?s.lng:null;$('f-link').value='';
   dlgSnap={v:dlgVals(),lat:pLat,lng:pLng};
@@ -650,7 +699,7 @@ $('f-del').onclick=function(){
     if(i>-1){l.splice(i,1);if(db.done[k])delete db.done[k][id];if(db.pay[k])delete db.pay[k][id]}
   });
   if(Object.keys(db.plans).some(function(k){return planOf(k).indexOf(id)>-1}))s.deleted=true;
-  else{db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1}
+  else{trashAdd(s,'user');db.places=db.places.filter(function(p){return p.id!==id});db.gone[id]=1}
   save();render();toast('Vendi u fshi.');
 };
 $('f-save').onclick=function(){
@@ -668,20 +717,20 @@ $('f-save').onclick=function(){
     Object.assign(s,normPlace(Object.assign({},s,ch)));
   }else{
     var p=normPlace(Object.assign({id:newId()},o));
-    db.places.push(p);if(addAfter)planFor(iso(cur)).push(p.id);
+    db.places.push(p);if(addAfter)planFor(dlgDay||iso(cur)).push(p.id);
   }
   save();$('dlg').close();render();
 };
 
 /* ===== Payment dialog ===== */
-var payId=null,pyPaid=false;
+var payId=null,pyPaid=false,payDay='';
 function setPaySeg(){
   $('py-unpaid').className=pyPaid?'':'on';$('py-paid').className=pyPaid?'on':'';
   $('py-unpaid').setAttribute('aria-pressed',String(!pyPaid));$('py-paid').setAttribute('aria-pressed',String(pyPaid));
 }
 function openPay(id){
   var s=byId(id);if(!s)return;
-  payId=id;var p=getPay(id);
+  payId=id;payDay=iso(cur);var p=getPay(id,payDay);
   $('py-t').textContent='Pagesa — '+s.name;
   $('py-amt').value=p.amt>0?String(p.amt):'';
   pyPaid=p.paid;setPaySeg();$('paydlg').showModal();
@@ -690,12 +739,12 @@ $('py-unpaid').onclick=function(){pyPaid=false;setPaySeg()};
 $('py-paid').onclick=function(){pyPaid=true;setPaySeg()};
 $('py-cancel').onclick=function(){$('paydlg').close()};
 $('py-clear').onclick=function(){
-  var k=iso(cur),s=byId(payId),dp=db.pay[k]=db.pay[k]||{};
+  var k=payDay||iso(cur),s=byId(payId),dp=db.pay[k]=db.pay[k]||{};
   if(s&&s.amt>0)dp[payId]={amt:0,paid:false};else delete dp[payId];
   save();$('paydlg').close();render();
 };
 $('py-save').onclick=function(){
-  var k=iso(cur),s=byId(payId),v=parseAmt($('py-amt').value);
+  var k=payDay||iso(cur),s=byId(payId),v=parseAmt($('py-amt').value);
   if(Number.isNaN(v)){$('py-amt').focus();toast('Shuma nuk është e vlefshme.');return}
   var dp=db.pay[k]=db.pay[k]||{};
   if(v>0)dp[payId]={amt:v,paid:pyPaid};
@@ -733,6 +782,38 @@ $('sh-cp').onclick=function(){
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,no);else no();
 };
 $('sh-sh').onclick=function(){if(navigator.share)navigator.share({text:$('sh-t').value}).catch(function(){});else $('sh-s').textContent='Shpërndarja nuk mbështetet këtu. Përdor WhatsApp, Viber ose Kopjo.'};
+
+/* ===== Restore deleted places / download a backup ===== */
+function restoreCandidates(){
+  var out=[];
+  Object.keys(trash).forEach(function(id){var x=trash[id];if(x&&x.p&&!byId(id))out.push({id:Number(id),p:x.p,at:x.at,why:x.why})});
+  db.places.forEach(function(p){if(p.deleted)out.push({id:p.id,p:p,soft:true})});
+  return out.sort(function(a,b){return (b.at||0)-(a.at||0)});
+}
+function openRestore(){drawRestore();$('rst').showModal()}
+function drawRestore(){
+  var c=restoreCandidates(),why={user:'u fshi në këtë pajisje',server:'u fshi nga një pajisje tjetër',license:'nga licenca e mëparshme'};
+  var u={};Object.keys(db.plans).forEach(function(k){planOf(k).forEach(function(i){if(!byId(i)&&!trash[i])u[i]=1})});var dang=Object.keys(u).length;
+  $('rs-h').textContent=c.length?'“Rikthe” e shton vendin përsëri në listë për të gjithë përdoruesit.':'Nuk ka vende të fshira në këtë pajisje.';
+  $('rs-l').innerHTML=c.map(function(x){return '<div class="ri"><div class="b"><div class="nm">'+esc(x.p.name)+'</div><div class="ad">'+esc(x.p.addr||'')+(x.soft?' · e fshirë (ka histori)':(x.at?' · '+esc(dayLabel(new Date(x.at)))+' · '+(why[x.why]||''):''))+'</div></div><button type="button" class="mapbtn" data-r="'+esc(x.id)+'">Rikthe</button></div>'}).join('')
+    +(dang?'<div class="hint bad">⚠ '+dang+' ndalesa i referohen vendeve që kjo pajisje nuk i ka. Hape aplikacionin në telefonin që i ka përdorur, ose përdor kopjen rezervë.</div>':'');
+  $('rs-all').hidden=c.length<2;
+}
+function restorePlace(id){
+  var s=byId(id),x=trash[id];
+  if(s&&s.deleted)delete s.deleted;
+  else if(!s&&x&&x.p){var p=normPlace(x.p);if(p){delete p.deleted;db.places.push(p)}}
+  delete trash[id];delete db.gone[id];
+}
+$('rs-l').addEventListener('click',function(e){var b=e.target.closest('button[data-r]');if(!b)return;restorePlace(Number(b.dataset.r));saveTrash();save();render();drawRestore();toast('Vendi u rikthye.')});
+$('rs-all').onclick=function(){var c=restoreCandidates();c.forEach(function(x){restorePlace(x.id)});saveTrash();save();render();drawRestore();toast(c.length+' vende u rikthyen.')};
+$('rs-x').onclick=function(){$('rst').close()};
+$('rs-dl').onclick=function(){
+  var data={app:'dergesat',saved:new Date().toISOString(),places:db.places,plans:db.plans,done:db.done,pay:db.pay,trash:trash};
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'}));
+  a.download='dergesat-kopje-'+iso(new Date())+'.json';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},2000);
+};
 
 /* ===== Map (Leaflet is loaded only when a day has positions) ===== */
 var LM=null,LMlayer=null,LMsig='',LMfit='',leafletP=null,routeCache={},routeReq={};
@@ -799,7 +880,7 @@ function initMap(){
    local copy differs from its base has unsent changes: it is retried until the server accepts it,
    and incoming server versions are merged field by field instead of overwriting local edits. */
 var LIC='';
-var sync={on:false,ready:false,synth:false,base:{p:{},d:{}},sent:{p:{},d:{}},force:false,inflight:{},polling:{},wver:{places:0,days:0},initP:null,outTm:null,retryTm:null,retryN:0,fails:0,warned:false};
+var sync={on:false,ready:false,synth:false,base:{p:{},d:{}},sent:{p:{},d:{}},force:false,inflight:{},polling:{},wver:{places:0,days:0},initP:null,allP:null,iv:null,outTm:null,retryTm:null,retryN:0,fails:0,warned:false,miss:{p:{},d:{}},revived:{p:{},d:{}},push:{p:{},d:{}},clash:{p:{},d:{}},lost:0,told:0,stuck:false,delOk:false};
 function rpc(fn,body){
   var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort()},15000);
   return fetch(API+fn,{method:'POST',headers:API_HEADERS,body:JSON.stringify(body),signal:ctl.signal})
@@ -807,6 +888,9 @@ function rpc(fn,body){
       var o=null;try{o=t?JSON.parse(t):null}catch(e){}
       if(!r.ok){var e1=new Error('HTTP '+r.status);e1.code=r.status;throw e1}
       if(o&&o.ok===false){var e2=new Error(o.err==='perm'?'Nuk ke leje për këtë veprim.':(o.err==='locked'?'Qasja është bllokuar përkohësisht.':String(o.err)));e2.code=o.err;throw e2}
+      /* Anything but an explicit {ok:true} (a Wi-Fi login page, a proxy error, a cut-off answer) is an error.
+         It must never be read as "the server has no data" or as "saved". */
+      if(!o||typeof o!=='object'||o.ok!==true||(fn==='kv_list'&&!Array.isArray(o.rows))){var e3=new Error('bad answer');e3.code='bad';throw e3}
       return o;
     })})
     .finally(function(){clearTimeout(tm)});
@@ -827,13 +911,13 @@ function loadBase(){
 function sentOr(t,id){var s=sync.sent[t][id];return s!==undefined?s:sync.base[t][id]}
 function pending(){
   var out=[],seen={};
-  db.places.forEach(function(p){seen[p.id]=1;if(canon(normPlace(p))!==sentOr('p',p.id))out.push({key:'p:'+p.id,coll:'places',id:String(p.id)})});
+  db.places.forEach(function(p){seen[p.id]=1;if(canon(normPlace(p))!==sentOr('p',p.id)||sync.push.p[p.id])out.push({key:'p:'+p.id,coll:'places',id:String(p.id)})});
   /* A place missing locally is deleted on the server ONLY if the user deleted it here (db.gone).
      Anything else (lost cache, another window, a bug) just reloads it from the server. */
   Object.keys(sync.base.p).forEach(function(id){if(!seen[id]&&db.gone[id])out.push({key:'p:'+id,coll:'places',id:id,del:true})});
   dayKeys().forEach(function(k){
     var v=normDay(dayDoc(k)),b=sentOr('d',k);
-    if(b===undefined?!isEmptyDay(v):canon(v)!==b)out.push({key:'d:'+k,coll:'days',id:k});
+    if((b===undefined?!isEmptyDay(v):canon(v)!==b)||(sync.push.d[k]&&!isEmptyDay(v)))out.push({key:'d:'+k,coll:'days',id:k});
   });
   return out;
 }
@@ -845,9 +929,12 @@ function merge3(b,l,s){
   });
   return out;
 }
+/* Stops: start from the server's list (its order is the reference, so every device merges to the same
+   result and nobody rewrites the day just to change the order), drop the ones removed here, then add
+   the ones added here. */
 function mergeIds(b,l,s){
-  var res=l.filter(function(x){return !(b.indexOf(x)>-1&&s.indexOf(x)<0)});
-  s.forEach(function(x){if(b.indexOf(x)<0&&l.indexOf(x)<0)res.push(x)});
+  var res=s.filter(function(x){return !(b.indexOf(x)>-1&&l.indexOf(x)<0)});
+  l.forEach(function(x){if(b.indexOf(x)<0&&res.indexOf(x)<0)res.push(x)});
   return res;
 }
 /* Three-way merge of one document: unchanged locally -> take server; unchanged on the server ->
@@ -860,20 +947,54 @@ function resolve(bj,l,s,lj,sj,mergeFn){
 }
 /* A write is confirmed only when a later read returns exactly what was sent. If another device
    overwrote it meanwhile, the base stays at the old version and the 3-way merge re-applies our change. */
-function confirmSent(t,id,sj){var sn=sync.sent[t][id];if(sn===undefined)return;if(sj===sn)sync.base[t][id]=sj;delete sync.sent[t][id]}
-function applyPlaces(list){
+/* Returns the version we wrote when we should give up re-applying it (see below), otherwise null. */
+function confirmSent(t,id,sj){
+  var sn=sync.sent[t][id];if(sn===undefined)return null;
+  delete sync.sent[t][id];
+  if(sj===sn){sync.base[t][id]=sj;sync.clash[t][id]=0;return null}
+  if(sj===undefined&&sync.revived[t][id]===1){
+    /* We uploaded a lost document again and the server still does not return it: stop retrying and warn. */
+    sync.revived[t][id]=2;delete sync.push[t][id];sync.stuck=true;return null;
+  }
+  /* Another device overwrote our write. Our change is merged in again once; if it is overwritten a
+     second time (two devices with opposite changes), the other device's version wins - otherwise both
+     would rewrite the document forever. */
+  sync.clash[t][id]=(sync.clash[t][id]||0)+1;
+  return sync.clash[t][id]>=2?sn:null;
+}
+/* full = places and days were read together in one round (pullAll/initialPull). Only such reads may
+   remove or revive anything, and only after two of them agree. */
+function applyPlaces(list,full){
   var base=sync.base.p,srv={},loc={},next=[],changed=false;
   list.forEach(function(r){var p=r&&normPlace(r.data);if(p&&String(p.id)===String(r.id))srv[p.id]=p});
   db.places.forEach(function(p){loc[p.id]=normPlace(p)});
   var used={};Object.keys(db.plans).forEach(function(k){planOf(k).forEach(function(i){used[i]=1})});
-  uniq(db.places.map(function(p){return String(p.id)}).concat(Object.keys(srv),Object.keys(base))).forEach(function(id){
+  var ids=uniq(db.places.map(function(p){return String(p.id)}).concat(Object.keys(srv),Object.keys(base)));
+  /* The app never removes several places at once, so many missing in one answer means the server lost them. */
+  var mass=ids.filter(function(id){return !srv[id]&&base[id]!==undefined&&!db.gone[id]}).length>=5;
+  ids.forEach(function(id){
     var s=srv[id],l=loc[id],sj=canon(s),lj=canon(l),gone=!!db.gone[id];
-    confirmSent('p',id,sj);
-    if(!l&&!gone&&base[id]!==undefined){l=JSON.parse(base[id]);lj=base[id]}
+    var giveUp=confirmSent('p',id,sj);
+    if(giveUp!==null&&s&&lj===giveUp){base[id]=sj;sync.clash.p[id]=0;next.push(s);changed=true;return}
+    if(s)delete sync.miss.p[id];
+    if(!l&&!gone&&base[id]!==undefined){l=JSON.parse(base[id]);lj=base[id];changed=true}
     if(gone&&!s)delete db.gone[id];
-    /* Recovery: the server lost a place that a day still lists. Deleting through the app never removes
-       a place that is on a day, so it was not deleted on purpose: upload this device's copy again. */
-    if(!s&&l&&!gone&&used[id]){delete base[id];next.push(l);changed=true;return}
+    if(!s&&l&&!gone&&base[id]!==undefined){
+      /* The server stopped returning a place this device has. Keep it until two complete reads agree. */
+      var n=full?(sync.miss.p[id]=(sync.miss.p[id]||0)+1):0;
+      if(n>=2){
+        var lost=used[id]||mass;
+        /* Still listed on a day, or many vanished at once: the server lost it (deleting in the app never
+           does that). Upload this device's copy again - once per session, so a broken server cannot cause a write loop. */
+        if(lost&&!sync.revived.p[id]){sync.revived.p[id]=1;sync.push.p[id]=1;sync.lost++;next.push(l);return}
+        /* Put back once already: give it a few more reads before following the server. */
+        if(lost&&n<6){next.push(l);return}
+        /* Deleted on another device (or gone again after being put back): remove it here too, keeping this
+           device's copy in the trash so an admin can restore it. */
+        trashAdd(l,'server');delete base[id];delete sync.miss.p[id];delete sync.push.p[id];changed=true;return;
+      }
+      next.push(l);return;
+    }
     var r=resolve(base[id],l,s,lj,sj,function(b,l2,s2){return normPlace(merge3(b,l2,s2))});
     if(canon(r)!==lj)changed=true;
     if(sj===undefined)delete base[id];else base[id]=sj;
@@ -882,15 +1003,24 @@ function applyPlaces(list){
   db.places=next;
   return changed;
 }
-function applyDays(list){
+function applyDays(list,full){
   var base=sync.base.d,srv={},changed=false;
   list.forEach(function(r){if(r&&isDayKey(String(r.id)))srv[r.id]=normDay(r.data)});
   uniq(dayKeys().concat(Object.keys(srv),Object.keys(base))).forEach(function(k){
     var s=srv[k],has=db.plans[k]||db.done[k]||db.pay[k],l=has?normDay(dayDoc(k)):undefined,sj=canon(s),lj=canon(l);
-    confirmSent('d',k,sj);
+    var giveUp=confirmSent('d',k,sj);
+    if(giveUp!==null&&s&&lj===giveUp){base[k]=sj;sync.clash.d[k]=0;setDay(k,s);changed=true;return}
+    if(s)delete sync.miss.d[k];
     if(l&&base[k]===undefined&&isEmptyDay(l)){l=undefined;lj=undefined}
     /* Days are never deleted locally on purpose: a missing local copy means "unchanged". */
-    if(!l&&base[k]!==undefined){l=JSON.parse(base[k]);lj=base[k]}
+    if(!l&&base[k]!==undefined){l=JSON.parse(base[k]);lj=base[k];changed=true}
+    if(!s&&l&&base[k]!==undefined){
+      /* The app never deletes days, so a day the server stopped returning was lost there. Keep this
+         device's copy, and once two complete reads agree upload it again (once per session). */
+      var n=full?(sync.miss.d[k]=(sync.miss.d[k]||0)+1):0;
+      if(n>=2&&!sync.revived.d[k]&&!isEmptyDay(l)){sync.revived.d[k]=1;sync.push.d[k]=1;sync.lost++}
+      setDay(k,l);return;
+    }
     var r=resolve(base[k],l,s,lj,sj,function(b,l2,s2){b=b||{ids:[],done:{},pay:{}};return normDay({ids:mergeIds(b.ids,l2.ids,s2.ids),done:merge3(b.done,l2.done,s2.done),pay:merge3(b.pay,l2.pay,s2.pay)})});
     if(canon(r)!==lj)changed=true;
     if(sj===undefined)delete base[k];else base[k]=sj;
@@ -905,7 +1035,7 @@ function initialPull(){
     /* Empty shared database and local data that was never uploaded: upload it (one-time import). */
     if(sync.synth&&!rp.length&&!rd.length&&db.places.length&&!store.get(LS_IMP)){sync.base={p:{},d:{}};store.set(LS_IMP,'1')}
     sync.synth=false;
-    applyDays(rd);applyPlaces(rp);persist();
+    applyDays(rd,true);applyPlaces(rp,true);persist();
     sync.ready=true;render();
     if(pending().length)syncOut();else netOk();
   },function(e){if(e&&e.code==='license'){revoked();return}netFail(e,false)})
@@ -916,6 +1046,7 @@ function pull(coll){
   if(sync.polling[coll])return sync.polling[coll];
   var v=sync.wver[coll],pre=coll==='places'?'p:':'d:';
   var pr=rpc('kv_list',{lic:LIC,coll:coll}).then(function(o){
+    if(!active)return false;
     /* A write started or finished meanwhile: this answer may predate it, so ignore it. */
     if(sync.wver[coll]!==v||Object.keys(sync.inflight).some(function(k){return k.indexOf(pre)===0}))return false;
     var changed=coll==='places'?applyPlaces(rows(o)):applyDays(rows(o));
@@ -928,6 +1059,23 @@ function pull(coll){
   sync.polling[coll]=pr;
   return pr;
 }
+function inflightIn(pre){return Object.keys(sync.inflight).some(function(k){return k.indexOf(pre)===0})}
+/* Regular poll: places and days read together, days applied first, so decisions about missing
+   places see the matching day lists. */
+function pullAll(){
+  if(sync.allP)return sync.allP;
+  var vp=sync.wver.places,vd=sync.wver.days;
+  sync.allP=Promise.all([rpc('kv_list',{lic:LIC,coll:'places'}),rpc('kv_list',{lic:LIC,coll:'days'})]).then(function(res){
+    if(!active)return;
+    var okD=sync.wver.days===vd&&!inflightIn('d:'),okP=sync.wver.places===vp&&!inflightIn('p:'),full=okD&&okP,ch=false;
+    if(okD)ch=applyDays(rows(res[1]),full)||ch;
+    if(okP)ch=applyPlaces(rows(res[0]),full)||ch;
+    persist();if(ch)render();
+    if(pending().some(function(x){return !sync.inflight[x.key]})){if(!sync.retryTm)syncOut()}else netOk();
+  },function(e){if(e&&e.code==='license'){revoked();return}netFail(e,false)})
+  .finally(function(){sync.allP=null});
+  return sync.allP;
+}
 /* force: a user action (tries even while waiting for a retry). */
 function syncOut(force){if(!sync.on)return;if(force)sync.force=true;clearTimeout(sync.outTm);sync.outTm=setTimeout(flush,300)}
 function flush(){
@@ -936,6 +1084,13 @@ function flush(){
   sync.force=false;
   var todo=pending().filter(function(x){return !sync.inflight[x.key]});
   if(!todo.length){netOk();return}
+  /* Safety stop: several deletions at once only happen after offline work; ask before sending them. */
+  var dels=todo.filter(function(x){return x.del});
+  if(!dels.length)sync.delOk=false;
+  if(dels.length>3&&!sync.delOk){
+    if(confirm('Do të fshihen '+dels.length+' vende nga databaza e përbashkët. Vazhdo?'))sync.delOk=true;
+    else{dels.forEach(function(x){var bj=sync.base.p[x.id];delete db.gone[x.id];if(trash[x.id])delete trash[x.id];if(bj&&!byId(x.id))db.places.push(JSON.parse(bj))});saveTrash();persist();render();return}
+  }
   /* Read the latest server state first, so concurrent edits from other devices are merged in. */
   var colls=uniq(todo.map(function(x){return x.coll}));
   Promise.all(colls.map(function(c){return pull(c).then(function(ok){return ok},function(){return null})})).then(function(res){
@@ -953,7 +1108,7 @@ function write(x){
   (x.del?rpc('kv_del',{lic:LIC,coll:x.coll,kid:x.id}):rpc('kv_set',{lic:LIC,coll:x.coll,kid:x.id,d:JSON.parse(j)}))
   .then(function(){
     var sm=isP?sync.sent.p:sync.sent.d;
-    if(x.del){delete bm[x.id];delete sm[x.id];if(isP)delete db.gone[x.id]}else sm[x.id]=j;
+    if(x.del){delete bm[x.id];delete sm[x.id];if(isP)delete db.gone[x.id]}else{sm[x.id]=j;delete sync.push[isP?'p':'d'][x.id]}
     saveBase();sync.retryN=0;
   },function(e){
     if(e&&e.code==='license'){revoked();return}
@@ -970,6 +1125,7 @@ function rejectWrite(x){
     if(bj)db.places.push(JSON.parse(bj));
     else{var id=Number(x.id);Object.keys(db.plans).forEach(function(k){var l=db.plans[k],i=l.indexOf(id);if(i>-1)l.splice(i,1);if(db.done[k])delete db.done[k][id];if(db.pay[k])delete db.pay[k][id]})}
   }else setDay(x.id,bj?JSON.parse(bj):undefined);
+  if(x.coll==='places'){delete db.gone[x.id];delete trash[x.id];saveTrash()}
   delete (x.coll==='places'?sync.sent.p:sync.sent.d)[x.id];
   save();render();toast('Nuk ke leje për këtë ndryshim. U kthye gjendja e mëparshme.');
 }
@@ -980,12 +1136,19 @@ function retryLater(){
 }
 function netOk(){
   sync.fails=0;
-  if(!sync.ready||sync.retryTm||pending().length)return;
-  sync.warned=false;setSync('● Sinkronizuar me të gjithë përdoruesit',true);
+  if(!sync.ready||sync.retryTm||pending().length){showStatus(true);return}
+  sync.warned=false;showStatus();
+}
+/* Warnings that matter more than "synced" stay visible until they are resolved. */
+function showStatus(onlyWarn){
+  if(sync.lost>sync.told){toast((sync.lost-sync.told)+' të dhëna që mungonin në databazë u rikthyen nga kjo pajisje.');sync.told=sync.lost}
+  if(!storeOk){setSync('⚠ Kjo pajisje nuk po i ruan dot të dhënat (memoria plot). Mos e mbyll aplikacionin pa internet.',false,true);return}
+  if(sync.stuck){setSync('⚠ Databaza nuk po i ruan disa të dhëna. Shkarko kopjen rezervë te “Vendet” dhe njofto administratorin.',false,true);return}
+  if(!onlyWarn)setSync('● Sinkronizuar me të gjithë përdoruesit',true);
 }
 function netFail(e,isWrite){
   sync.fails++;
-  var why=!e||!e.code?'pa internet':(e.code==='locked'?'qasja është bllokuar përkohësisht':String(e.code));
+  var why=!e||!e.code?'pa internet':(e.code==='locked'?'qasja është bllokuar përkohësisht':(e.code==='bad'?'përgjigje e pavlefshme nga rrjeti':String(e.code)));
   if(isWrite){
     setSync('⚠ Ndryshimet nuk janë dërguar ende ('+why+'). Ruhen në këtë pajisje dhe dërgohen automatikisht.',false,true);
     if(!sync.warned){sync.warned=true;toast('Pa lidhje: ndryshimet dërgohen kur të ketë internet.')}
@@ -997,13 +1160,13 @@ function startSync(){
   sync.on=true;
   setSync('Po lidhem me databazën…');
   initialPull();
-  setInterval(function(){
-    if(document.hidden)return;
+  sync.iv=setInterval(function(){
+    if(document.hidden||!sync.on)return;
     if(!sync.ready){initialPull();return}
-    pull('places').catch(function(){});pull('days').catch(function(){});
+    pullAll();
   },5000);
-  document.addEventListener('visibilitychange',function(){if(!document.hidden&&sync.ready){pull('places').catch(function(){});pull('days').catch(function(){})}});
-  window.addEventListener('online',function(){clearTimeout(sync.retryTm);sync.retryTm=null;sync.retryN=0;syncOut()});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&sync.ready&&sync.on)pullAll()});
+  window.addEventListener('online',function(){if(!sync.on)return;clearTimeout(sync.retryTm);sync.retryTm=null;sync.retryN=0;syncOut()});
 }
 
 /* ===== License gate ===== */
@@ -1016,15 +1179,42 @@ function checkLicense(c){
 function revoked(){store.del(LK);location.reload()}
 /* Local data belongs to one license; a different license starts from an empty cache. */
 function adoptCache(c){
-  var h=hash(c),o=store.get(LS_OWNER);
+  var h=hash(c),o=store.get(LS_OWNER);myOwner=h;
   /* No owner recorded (data left by an older version after logout) is treated as foreign too. */
-  if((o&&o!==h)||(!o&&db.places.length)){db=emptyDb();[LS_DB,LS_IMP].forEach(store.del);loadBase()}
+  if((o&&o!==h)||(!o&&db.places.length))archiveCache();
   store.set(LS_OWNER,h);
+}
+/* Data of another license: start empty, but never destroy it - its places go to the trash and the
+   whole old copy is kept, so a license switch cannot lose anything. */
+function archiveCache(){
+  var raw=store.get(LS_DB);if(raw)store.set(LS_PREV,raw);
+  var o=null;try{o=JSON.parse(raw||'null')}catch(e){}
+  var now=Date.now();((o&&Array.isArray(o.places))?o.places:db.places).forEach(function(p){p=normPlace(p);if(p)trash[p.id]={p:p,at:now,why:'license'}});
+  trimTrash(false);store.set(LS_TRASH,JSON.stringify(trash));
+  db=emptyDb();[LS_DB,LS_IMP].forEach(store.del);loadBase();
+}
+/* Only one window or tab may work on the data at a time; two windows writing the same storage is what
+   lost the places on 27 Nov. Taking over re-reads what the other window saved. */
+var token=Math.random().toString(36).slice(2)+Date.now().toString(36);
+function claim(){
+  var o=null;try{o=JSON.parse(store.get(LS_DB)||'null')}catch(e){}
+  if(o&&o.owner&&myOwner&&o.owner!==myOwner)archiveCache();
+  db=loadDb();loadBase();trash=loadTrash();
+  active=true;store.set(LS_ACTIVE,token);persist();
+}
+function deactivate(){
+  if(!active)return;
+  active=false;sync.on=false;clearInterval(sync.iv);clearTimeout(sync.outTm);clearTimeout(sync.retryTm);
+  Array.prototype.forEach.call(document.querySelectorAll('dialog[open]'),function(d){d.close()});
+  var o=document.createElement('div');o.id='other';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-labelledby','o-title');
+  o.innerHTML='<div class="g-box"><svg class="logo" viewBox="0 0 597 106" role="img" aria-label="Antracit"><use href="#lg-full"/></svg><h1 id="o-title">Hapur në një dritare tjetër</h1><p>Aplikacioni u hap në një dritare ose skedë tjetër. Që të mos humbasin të dhëna, punohet vetëm në një dritare.</p><button id="o-go" type="button">Përdor këtu</button></div>';
+  document.body.appendChild(o);setInert(true);
+  $('o-go').onclick=function(){location.reload()};
 }
 function applyRole(r){store.set(RK,r||'driver');document.body.classList.toggle('driver',r!=='admin'&&r!=='manager');document.body.classList.toggle('mgr',r==='manager')}
 var started=false;
-function startApp(){if(started)return;started=true;render();startSync()}
-function setInert(on){Array.prototype.forEach.call(document.body.children,function(el){if(el.id!=='gate')el.inert=on})}
+function startApp(){if(started)return;started=true;claim();render();startSync()}
+function setInert(on){Array.prototype.forEach.call(document.body.children,function(el){if(el.id!=='gate'&&el.id!=='other')el.inert=on})}
 function showGate(msg){
   var g=$('gate');
   if(!g){
@@ -1051,21 +1241,18 @@ function showGate(msg){
 }
 $('dil').onclick=function(){
   var n=sync.on?pending().length:0;
-  if(!confirm(n?'Ke '+n+' ndryshime që nuk janë dërguar ende dhe do të humbasin. Të dalësh gjithsesi?':'Të dalësh nga licenca? Do të të duhet kodi përsëri për të hyrë.'))return;
-  /* Logging out also removes the cached customer data from this device. */
-  [LK,RK,LS_DB,LS_BASE,LS_IMP,LS_OWNER].forEach(store.del);
+  if(!confirm(n?'Ke '+n+' ndryshime që nuk janë dërguar ende dhe do të humbasin. Të dalësh gjithsesi?':'Të dalësh nga licenca? Të dhënat e klientëve fshihen nga kjo pajisje dhe do të të duhet kodi përsëri.'))return;
+  /* Logging out also removes the cached customer data (and its backups) from this device. */
+  active=false;
+  [LK,RK,LS_DB,LS_BASE,LS_IMP,LS_OWNER,LS_TRASH,LS_PREV,LS_ACTIVE].forEach(store.del);
   location.reload();
 };
 
-/* Another window or tab of the app changed the saved state: logout there logs out here too, and
-   otherwise this window continues from that window's data and sync state. */
+/* Another window or tab: if it took over the data, this one stops (see claim()); logout there logs out here. */
 window.addEventListener('storage',function(e){
-  if(e.storageArea!==localStorage)return;
-  if((e.key===LK&&!e.newValue)||(e.key===LS_DB&&!e.newValue)||e.key===null){location.reload();return}
-  if(e.key!==LS_DB||!started)return;
-  db=loadDb();var b=null;try{b=JSON.parse(e.newValue).sync}catch(x){}
-  if(b&&b.p&&b.d){sync.base={p:b.p,d:b.d};sync.sent={p:b.sp||{},d:b.sd||{}}}
-  render();
+  if(e.storageArea&&e.storageArea!==localStorage)return;
+  if(e.key===LS_ACTIVE){if(active&&store.get(LS_ACTIVE)!==token)deactivate();return}
+  if((e.key===LK&&!e.newValue)||e.key===null){active=false;location.reload()}
 });
 
 /* A PWA left open overnight jumps to the new day when it comes back. */
@@ -1081,7 +1268,7 @@ loadBase();
 (function(){
   var c=store.get(LK)||'';
   if(!c){showGate();return}
-  LIC=c;
+  LIC=c;myOwner=hash(c);
   if(!store.get(LS_OWNER))store.set(LS_OWNER,hash(c)); /* a cache from an older version belongs to the stored license */
   checkLicense(c).then(function(o){
     if(o&&o.ok){adoptCache(c);applyRole(o.role);startApp()}
@@ -1090,7 +1277,18 @@ loadBase();
     else throw new Error('unexpected answer');
   }).catch(function(){applyRole(store.get(RK)||'driver');startApp()});
 })();
-if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('Service worker:',e)})});
+if('serviceWorker' in navigator)window.addEventListener('load',function(){
+  var had=!!navigator.serviceWorker.controller,going=false,last=Date.now();
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-last>6e5){last=Date.now();reg.update().catch(function(){})}});
+  }).catch(function(e){console.warn('Service worker:',e)});
+  /* A new version took over: reload into it (everything is already saved on the device), so no phone
+     keeps running old code until someone restarts it. Waits while a dialog or a text field is in use. */
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(!had||going)return;going=true;
+    (function tryReload(){var a=document.activeElement;if(document.querySelector('dialog[open]')||(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){setTimeout(tryReload,3000);return}location.reload()})();
+  });
+});
 </script>
 </body>
 </html>
