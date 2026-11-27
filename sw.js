@@ -1,5 +1,5 @@
 // Bump CACHE whenever the precached files change.
-const CACHE = 'v6';
+const CACHE = 'v7';
 const PRECACHE = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 // Versioned third-party assets (Leaflet, Google Fonts) are safe to serve cache-first.
 const CDN = ['https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
@@ -7,7 +7,8 @@ const NAV_TIMEOUT = 3500;
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)));
+  // cache: 'reload' skips the browser's HTTP cache, so a new version never precaches the previous index.html.
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE.map(u => new Request(u, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', e => e.waitUntil(
@@ -39,7 +40,9 @@ self.addEventListener('fetch', e => {
   // opening the app takes longer than NAV_TIMEOUT on a weak signal (the network still refreshes the cache).
   const fallback = () => caches.match(req, { ignoreSearch: true })
     .then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined));
-  const net = fetch(req).then(res => {
+  // Pages are always revalidated with the server (cheap 304), never taken from the HTTP cache unchecked.
+  const net = fetch(req.mode === 'navigate' ? new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : req).then(res => {
+    if (res.redirected) res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers });
     if (res.status === 200 && res.type === 'basic') put(req, res);
     return res;
   });

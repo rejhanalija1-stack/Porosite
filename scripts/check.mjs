@@ -9,7 +9,7 @@ const read = f => readFileSync(new URL(f, root), 'utf8');
 let failed = false;
 const ok = (name, fn) => { try { fn(); console.log(`ok   ${name}`); } catch (e) { failed = true; console.error(`FAIL ${name}\n${e.message}`); } };
 
-for (const f of ['server.js', 'sw.js', 'scripts/check.mjs']) {
+for (const f of ['server.js', 'sw.js', 'scripts/check.mjs', 'scripts/backup.mjs', 'scripts/restore.mjs']) {
   ok(f, () => execFileSync(process.execPath, ['--check', fileURLToPath(new URL(f, root))], { stdio: 'pipe' }));
 }
 ok('index.html <script>', () => {

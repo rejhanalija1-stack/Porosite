@@ -7,7 +7,9 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node -e \"console.log('Static site ready')\"",
-    "lint": "node scripts/check.mjs"
+    "lint": "node scripts/check.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs"
   },
   "dependencies": {
     "express": "^4.21.2"
